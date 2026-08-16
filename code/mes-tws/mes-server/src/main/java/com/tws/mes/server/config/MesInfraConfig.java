@@ -24,7 +24,10 @@ public class MesInfraConfig {
     @Bean
     public MybatisPlusInterceptor mybatisPlusInterceptor() {
         MybatisPlusInterceptor interceptor = new MybatisPlusInterceptor();
+        // 分页
         interceptor.addInnerInterceptor(new PaginationInnerInterceptor(DbType.MYSQL));
+        // 乐观锁：实体字段加 @Version 后，UPDATE 自动带 version 条件并自增
+        interceptor.addInnerInterceptor(new com.baomidou.mybatisplus.extension.plugins.inner.OptimisticLockerInnerInterceptor());
         return interceptor;
     }
 

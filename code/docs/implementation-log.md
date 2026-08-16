@@ -117,3 +117,24 @@
 **问题 #7（记录）**：Vite5 默认只监听 `[::1]:5173`（IPv6），用 `127.0.0.1:5173` 测连通会失败，要用 `localhost`。
 
 **验证（全绿）**：dev 服务器启动 1.4s；`localhost:5173` 返回页面 HTML；经 5173 代理 POST 登录成功返回 token；`npm run build` 生产构建通过（7.3s）。
+
+---
+
+## M2 基础数据 + 工单管理（2026-08-17 06:20~06:45）
+
+**后端产物**：
+- 基础数据：物料批次（Service 版）、BOM 主从保存（MdBomService）、工艺路线版本化（**草稿→发布**才能被工单引用；同编码自动递增版本；已发布不可改只能"复制新版本"）、工序/产线/工位/不良代码（DictController 聚合简单字典）
+- 工单：WorkOrderService 三个核心设计——
+  - **状态机**：静态迁移表 TRANSITIONS（release/start/pause/resume/complete/close），非法迁移给出中文提示
+  - **快照**：创建时复制路线工序（含 check_rules JSON）到 plan_wo_operation，并冗余工序名/类型
+  - **乐观锁**：`@Version` + OptimisticLockerInnerInterceptor，更新 0 行即提示"已被他人变更"
+- 分页关联（工单 join 物料/路线）用注解 SQL 在库端完成，避免 N+1
+- CurrentUserService：流水 operator 存用户名（人能读懂）而非用户 ID
+
+**问题 #8（已解）**：Java 15+ 文本块 `"""` 和 `Map.of`/`List.copyOf`（Java 9+）在编译目标 1.8 下不可用——写代码时顺手用了新语法，编译才暴露。全部改为字符串拼接/HashMap。
+**问题 #9（已解）**：工单号最初用"当日计数+1"，序号不连续时会撞号（当日已有 003 时生成了 002）。改为"当日最大序号+1"，唯一索引兜底。
+**问题 #10（已解）**：前端 LineStation.vue 导入的 API 函数 `saveLine/saveStation` 与本地处理函数重名，Vite 构建报 Identifier already declared——import 加 Api 后缀别名。
+
+**验证（curl 全绿）**：planner1 创建工单（V2 路线）→ 下达 → 开工 → 暂停 → 恢复全部 200；详情含 16 道工序快照（V2 的 seq25=声学测试(左耳) 证明快照取的是 V2）；WO 分页关联出物料/路线名。
+
+**前端产物**：批次/工序/不良代码/产线工位（字典页）+ BOM 主从编辑器 + **工艺路线编辑器**（工序行内编辑 + check_rules 模板一键插入 + 发布/复制新版本）+ 工单列表（状态操作按钮按状态与角色显隐、进度条）+ 工单详情（快照表 + JSON 美化）；AppLayout 升级为分组菜单（el-sub-menu）。`npm run build` ✓（7.1s）。

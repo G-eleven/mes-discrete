@@ -3,11 +3,22 @@
     <el-aside width="220px" class="aside">
       <div class="logo">TWS 装配 MES</div>
       <el-menu :default-active="$route.path" router background-color="#001529"
-               text-color="#a6adb4" active-text-color="#ffffff">
-        <el-menu-item v-for="item in menus" :key="item.path" :index="'/' + item.path">
+               text-color="#a6adb4" active-text-color="#ffffff" :unique-opened="true">
+        <!-- 无 group 的路由：一级菜单 -->
+        <el-menu-item v-for="item in topMenus" :key="item.path" :index="'/' + item.path">
           <el-icon><component :is="item.meta.icon" /></el-icon>
           <span>{{ item.meta.title }}</span>
         </el-menu-item>
+        <!-- 有 group 的路由：折叠为二级菜单 -->
+        <el-sub-menu v-for="(items, group) in groupedMenus" :key="group" :index="group">
+          <template #title>
+            <el-icon><Folder /></el-icon><span>{{ group }}</span>
+          </template>
+          <el-menu-item v-for="item in items" :key="item.path" :index="'/' + item.path">
+            <el-icon><component :is="item.meta.icon" /></el-icon>
+            <span>{{ item.meta.title }}</span>
+          </el-menu-item>
+        </el-sub-menu>
       </el-menu>
     </el-aside>
     <el-container>
@@ -35,18 +46,28 @@
 
 <script setup>
 import { computed } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { useRouter } from 'vue-router'
 import { useUserStore } from '../stores/user'
 
-const route = useRoute()
 const router = useRouter()
 const userStore = useUserStore()
 
-// 从路由表第一层 children 生成菜单（学习版菜单写死在前端，按角色过滤）
-const menus = computed(() => {
+// 可见路由 = 未隐藏 + （无角色限制 或 角色匹配）
+const visible = computed(() => {
   const root = router.options.routes.find(r => r.path === '/')
   const role = userStore.roleCode || localStorage.getItem('roleCode') || ''
-  return (root?.children || []).filter(r => !r.meta?.roles || r.meta.roles.includes(role))
+  return (root?.children || []).filter(r =>
+    !r.meta?.hidden && (!r.meta?.roles || r.meta.roles.includes(role)))
+})
+
+const topMenus = computed(() => visible.value.filter(r => !r.meta?.group))
+// 按 group 归类
+const groupedMenus = computed(() => {
+  const map = {}
+  visible.value.filter(r => r.meta?.group).forEach(r => {
+    (map[r.meta.group] = map[r.meta.group] || []).push(r)
+  })
+  return map
 })
 
 const roleLabel = computed(() => ({
