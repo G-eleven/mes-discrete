@@ -22,6 +22,10 @@ const routes = [
       { path: 'exec/sn', name: 'SnList', component: () => import('../views/exec/SnList.vue'), meta: { title: 'SN 管理', icon: 'Barcode', group: '生产执行' } },
       { path: 'exec/log', name: 'StationLog', component: () => import('../views/exec/StationLog.vue'), meta: { title: '过站流水', icon: 'DocumentCopy', group: '生产执行' } },
 
+      { path: 'quality/defect', name: 'DefectList', component: () => import('../views/quality/DefectList.vue'), meta: { title: '不良与维修', icon: 'WarningFilled', group: '质量管理' } },
+      { path: 'quality/fpy', name: 'FpyReport', component: () => import('../views/quality/FpyReport.vue'), meta: { title: '良率报表', icon: 'DataAnalysis', group: '质量管理' } },
+      { path: 'quality/fai', name: 'Fai', component: () => import('../views/quality/Fai.vue'), meta: { title: '首件检验', icon: 'CircleCheck', group: '质量管理' } },
+
       { path: 'base/material', name: 'Material', component: () => import('../views/base/Material.vue'), meta: { title: '物料管理', icon: 'Box', roles: ['admin'], group: '基础数据' } },
       { path: 'base/material-batch', name: 'MaterialBatch', component: () => import('../views/base/MaterialBatch.vue'), meta: { title: '物料批次', icon: 'Files', roles: ['admin', 'quality'], group: '基础数据' } },
       { path: 'base/bom', name: 'Bom', component: () => import('../views/base/Bom.vue'), meta: { title: 'BOM 管理', icon: 'SetUp', roles: ['admin'], group: '基础数据' } },
