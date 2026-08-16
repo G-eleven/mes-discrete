@@ -32,7 +32,7 @@ INSERT INTO md_material (id, material_code, material_name, material_type, unit, 
 -- ---------------- 物料批次(注意 PCL240801-B 是"问题批次") ----------------
 INSERT INTO md_material_batch (id, material_id, batch_no, supplier, arrive_time, quantity, status) VALUES
 (1, 2, 'PCLA240801', '协丰电子', '2026-08-01 08:30:00', 5000, 1),
-(2, 2, 'PCLB240801', '协丰电子', '2026-08-01 10:00:00', 300,  1), -- 左耳PCBA问题批:贴片使用了华科问题麦克风
+(2, 2, 'PCLB240801', '协丰电子', '2026-08-01 10:00:00', 300,  0), -- 左耳PCBA问题批:贴片使用了华科问题麦克风,发现后已冻结
 (3, 3, 'PCRA240801', '协丰电子', '2026-08-01 08:30:00', 5000, 1),
 (4, 4, 'PCCA240801', '协丰电子', '2026-08-01 08:30:00', 5000, 1),
 (5, 5, 'MICA240701', '美声电声', '2026-07-01 09:00:00', 50000,1),
@@ -150,7 +150,7 @@ INSERT INTO md_defect_code (id, defect_code, defect_name, category) VALUES
 INSERT INTO plan_work_order (id, wo_no, product_material_id, bom_id, routing_id, routing_version,
   plan_qty, ok_qty, ng_qty, sn_generated, status, plan_start_date, plan_end_date, create_by) VALUES
 (1,'WO20260801001',1,1,1,1, 500,79,4,1,'COMPLETED','2026-08-01','2026-08-08','planner1'),
-(2,'WO20260816002',1,1,2,2, 1000,20,0,1,'IN_PROGRESS','2026-08-16','2026-08-23','planner1'),
+(2,'WO20260816002',1,1,2,2, 1000,18,0,1,'IN_PROGRESS','2026-08-16','2026-08-23','planner1'),
 (3,'WO20260817003',1,1,1,1, 300,0,0,0,'CREATED','2026-08-18','2026-08-25','planner1');
 -- 工单1 的工序快照与历史流水由下方存储过程生成(含快照本身)
 
@@ -258,8 +258,8 @@ BEGIN
 END $$
 
 -- 工单2(WO20260816002, V2路线含声学站, 40台投产中):
---   1~20 完工(全OK); 21~40 部件全部过完(RF/盒测试)等待三码绑定;
---   22/26 号左耳在声学站被 D04 拦截(不良 OPEN, 维修工作台演示用)
+--   1~20 完工(全OK,其中1~8号左耳用问题批PCLB但抽检合格); 21~40 部件过完RF/盒待三码绑定;
+--   2/6 号左耳(问题批PCLB)在声学站被 D04 提前拦截(V1时代要到FCT才暴露) —— 不良 OPEN 待维修
 DROP PROCEDURE IF EXISTS seed_wo2 $$
 CREATE PROCEDURE seed_wo2()
 BEGIN
@@ -270,7 +270,7 @@ BEGIN
   WHILE i <= 40 DO
     SET v_time = DATE_ADD('2026-08-16 08:00:00', INTERVAL (i-1)*20 MINUTE);
     SET v_m = CONCAT('WO20260816002-', LPAD(i,4,'0'));
-    -- 问题批次余料装在 1~8 号机(V2 在声学站提前拦截)
+    -- 问题批次余料装在 1~8 号机(V2 在声学站提前拦截其中 2/6 号)
     SET v_lbatch = IF(i <= 8, 'PCLB240801', 'PCLA240801');
     SET v_l = CONCAT('L-', v_lbatch, '-W2-', LPAD(i,4,'0'));
     SET v_r = CONCAT('R-PCRA240801-W2-', LPAD(i,4,'0'));
@@ -278,9 +278,9 @@ BEGIN
     INSERT INTO sn_registry (sn, sn_type, work_order_id, batch_no, status, create_time)
     VALUES (v_l,'LEFT',2,v_lbatch,'IN_LINE',v_time),(v_r,'RIGHT',2,'PCRA240801','IN_LINE',v_time),
            (v_c,'CASE',2,'PCCA240801','IN_LINE',v_time),(v_m,'MACHINE',2,NULL,'INIT',v_time);
-    -- 左耳: 烧录 -> 声学(问题批 22/26 号 NG 并停线待修)
+    -- 左耳: 烧录 -> 声学(问题批 2/6 号 NG 拦截,停线待修)
     CALL seed_pass(v_l,2,'L1-BURN-L','OP-BURN-L',20,'OK',NULL,JSON_OBJECT('firmware','1.2.5'),0,DATE_ADD(v_time,INTERVAL 2 MINUTE),'op1');
-    IF i IN (22,26) THEN
+    IF i IN (2,6) THEN
       CALL seed_pass(v_l,2,'L1-ACOUS-L','OP-ACOUS-L',25,'NG','D04',JSON_OBJECT('mic_sensitivity',-42.1),0,DATE_ADD(v_time,INTERVAL 3 MINUTE),'op1');
       UPDATE sn_registry SET status='NG', current_seq=25 WHERE sn = v_l;
       INSERT INTO defect_record (sn, work_order_id, station_code, operation_code, defect_code, defect_desc, discover_type, repair_round, status, create_time)
@@ -290,7 +290,7 @@ BEGIN
       CALL seed_pass(v_l,2,'L1-ACOUS-L','OP-ACOUS-L',25,'OK',NULL,JSON_OBJECT('mic_sensitivity',-37.5+(i%6)*0.2),0,DATE_ADD(v_time,INTERVAL 3 MINUTE),'op1');
       UPDATE sn_registry SET current_seq=25 WHERE sn = v_l;
     END IF;
-    IF i NOT IN (22,26) THEN
+    IF i NOT IN (2,6) THEN
       -- 右耳 + 盒正常过
       CALL seed_pass(v_r,2,'L1-BURN-R','OP-BURN-R',30,'OK',NULL,JSON_OBJECT('firmware','1.2.5'),0,DATE_ADD(v_time,INTERVAL 4 MINUTE),'op1');
       CALL seed_pass(v_r,2,'L1-ACOUS-R','OP-ACOUS-R',35,'OK',NULL,JSON_OBJECT('mic_sensitivity',-37.2+(i%4)*0.2),0,DATE_ADD(v_time,INTERVAL 5 MINUTE),'op1');

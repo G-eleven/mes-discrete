@@ -26,6 +26,9 @@ const routes = [
       { path: 'quality/fpy', name: 'FpyReport', component: () => import('../views/quality/FpyReport.vue'), meta: { title: '良率报表', icon: 'DataAnalysis', group: '质量管理' } },
       { path: 'quality/fai', name: 'Fai', component: () => import('../views/quality/Fai.vue'), meta: { title: '首件检验', icon: 'CircleCheck', group: '质量管理' } },
 
+      { path: 'trace/forward', name: 'TraceForward', component: () => import('../views/trace/TraceForward.vue'), meta: { title: '正向追溯', icon: 'Search', group: '追溯管理' } },
+      { path: 'trace/reverse', name: 'TraceReverse', component: () => import('../views/trace/TraceReverse.vue'), meta: { title: '反向追溯', icon: 'Switch', group: '追溯管理' } },
+
       { path: 'base/material', name: 'Material', component: () => import('../views/base/Material.vue'), meta: { title: '物料管理', icon: 'Box', roles: ['admin'], group: '基础数据' } },
       { path: 'base/material-batch', name: 'MaterialBatch', component: () => import('../views/base/MaterialBatch.vue'), meta: { title: '物料批次', icon: 'Files', roles: ['admin', 'quality'], group: '基础数据' } },
       { path: 'base/bom', name: 'Bom', component: () => import('../views/base/Bom.vue'), meta: { title: 'BOM 管理', icon: 'SetUp', roles: ['admin'], group: '基础数据' } },
