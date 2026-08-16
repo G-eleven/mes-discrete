@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <groupId>com.tws.mes</groupId>
+        <artifactId>mes-tws</artifactId>
+        <version>1.0.0</version>
+    </parent>
+
+    <artifactId>mes-trace</artifactId>
+    <name>mes-trace</name>
+    <description>追溯层：正向(SN全档案) / 反向(批次→整机) 追溯与任务留痕</description>
+
+    <dependencies>
+        <dependency>
+            <groupId>com.tws.mes</groupId>
+            <artifactId>mes-common</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.tws.mes</groupId>
+            <artifactId>mes-base</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.tws.mes</groupId>
+            <artifactId>mes-execution</artifactId>
+        </dependency>
+    </dependencies>
+</project>

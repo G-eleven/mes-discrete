@@ -1,0 +1,42 @@
+server:
+  port: 8080
+
+spring:
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://127.0.0.1:3306/mes_tws?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&useSSL=false
+    username: root
+    password: mysql
+  redis:
+    host: 127.0.0.1
+    port: 6379
+    # 本机无密码，留空即可
+    database: 0
+
+mybatis-plus:
+  configuration:
+    map-underscore-to-camel-case: true
+    # 开发期打印 SQL，生产关闭
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+  global-config:
+    banner: false
+
+sa-token:
+  # token 名（同时也是前端请求头名）
+  token-name: satoken
+  # 7 天有效期
+  timeout: 604800
+  # 允许同一账号多处登录
+  is-concurrent: true
+  # 每次登录生成新 token
+  is-share: false
+  token-style: uuid
+
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+    tags-sorter: order
+
+logging:
+  level:
+    com.tws.mes: info

@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <groupId>com.tws.mes</groupId>
+        <artifactId>mes-tws</artifactId>
+        <version>1.0.0</version>
+    </parent>
+
+    <artifactId>mes-quality</artifactId>
+    <name>mes-quality</name>
+    <description>质量层：不良记录 / 维修回流 / 首件 / FPY 双口径统计</description>
+
+    <dependencies>
+        <dependency>
+            <groupId>com.tws.mes</groupId>
+            <artifactId>mes-common</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.tws.mes</groupId>
+            <artifactId>mes-base</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.tws.mes</groupId>
+            <artifactId>mes-execution</artifactId>
+        </dependency>
+    </dependencies>
+</project>

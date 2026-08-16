@@ -268,7 +268,7 @@ CREATE TABLE station_log (
   retest_round   INT         NOT NULL DEFAULT 0 COMMENT '维修回流轮次:0首过,1..n重测',
   checkin_key    VARCHAR(120) DEFAULT NULL COMMENT '防重唯一键: sn:stationCode:round',
   operator       VARCHAR(50) DEFAULT NULL,
-  create_time    DATETIME    DEFAULT CURRENT_TIMESTAMP(3),
+  create_time    DATETIME(3) DEFAULT CURRENT_TIMESTAMP(3),
   UNIQUE KEY uk_checkin_key (checkin_key),
   KEY idx_sn (sn),
   KEY idx_wo (work_order_id),
