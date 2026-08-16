@@ -138,3 +138,29 @@
 **验证（curl 全绿）**：planner1 创建工单（V2 路线）→ 下达 → 开工 → 暂停 → 恢复全部 200；详情含 16 道工序快照（V2 的 seq25=声学测试(左耳) 证明快照取的是 V2）；WO 分页关联出物料/路线名。
 
 **前端产物**：批次/工序/不良代码/产线工位（字典页）+ BOM 主从编辑器 + **工艺路线编辑器**（工序行内编辑 + check_rules 模板一键插入 + 发布/复制新版本）+ 工单列表（状态操作按钮按状态与角色显隐、进度条）+ 工单详情（快照表 + JSON 美化）；AppLayout 升级为分组菜单（el-sub-menu）。`npm run build` ✓（7.1s）。
+
+---
+
+## M3 生产执行：过站引擎（2026-08-17 06:50~07:30）
+
+**后端产物**（本项目的心脏，mes-execution）：
+- `rule/CheckRule` 接口 + **八大防呆规则**（Spring Bean，order 排序成责任链，新增规则零改动主流程）：
+  1. WoStatusRule 工单状态（仅生产中可过站）
+  2. SnValidRule SN 合法性（报废/完工拦截 + 工位/SN 类型匹配）
+  3. OpenDefectRule 前置不良闭环（OPEN 不良单未处理禁止流转——"带病流转"防线）
+  4. SeqRule 工序顺序（按 SN 类型过滤工单快照工序，防跳站/漏站；重测由轮次放行）
+  5. DuplicateRule 重复过站（同 SN 同工位同轮次已 OK 拦截）
+  6. BindingRule 绑定完整性（needBinding 校验，防"空盒出厂"）
+  7. LoadingRule 上料批次（requireLoading 工位未上料拦截）
+  8. TestItemRule 测试项判定（eq/gt/ge… 支持"期望 vs 实际"提示；判 NG 必须给不良码）
+- `CheckinService` 主流程：工位换算→装配上下文→**Redis SET NX 锁(5s)**→规则链→流水落库（**checkin_key 唯一索引兜底并发**）→SN 状态推进（NG 自动开不良单）→Spring 事件异步更新工单进度（MQ 留位）
+- `SnService`：整机 SN 批量生成（幂等）、部件 SN 来料注册（带批次）、三码绑定（类型/重绑/报废校验 + BINDING 流水）、上料（批次冻结拦截）、流水/绑定查询
+- `/api/station/context`：返回工序快照规则要点，前端模拟器动态渲染测试项输入框
+
+**问题 #11（已解）**：整机被要求先"过 IQC 站"——IQC 是来料检验（扫批次不扫 SN），但规则里 snType 写了 MACHINE，进入了整机工序序列。修复：IQC 规则 snType 改为 MATERIAL（无 SN 匹配 → 该工位自动拒绝 SN 过站，且不进任何 SN 序列）。库数据、seed.sql、已有工单快照三处同步更新。
+
+**验证（curl 八场景全绿）**：绑定前 COUPLE 被拦 → 三码绑定成功 → COUPLE 过站 OK → 重复过站拦截 → FCT 固件 1.2.4 判 OK 被 TestItemRule 拦截（提示期望 eq 1.2.5 实际 1.2.4）→ 判 NG D09 自动开不良单 → NG 后流 APP 被 OpenDefectRule 拦截 → 左耳 SN 扫右耳站被类型校验拦截。
+
+**前端产物**：**过站模拟器**（选工单/工位 → 规则要点展示 + 动态测试项输入（预填期望值）→ OK/NG + 不良代码 → 拦截原因实时提示 + "取下一个 SN"辅助 + 三码绑定面板 + 上料面板 + 工位实时流水）；SN 管理（整机生成/部件注册/多条件查询）；过站流水查询（含轮次与测试数据）；工单详情加进度条与"生成整机 SN"。
+
+**M3 期间产生的演示数据（已入库）**：WO20260816002-0021 完成绑定+COUPLE+AGING，FCT 判 NG D09（OPEN，留给 M4 维修演示）；测试工单 WO20260817002（planner1 创建，IN_PROGRESS，V2 路线）。

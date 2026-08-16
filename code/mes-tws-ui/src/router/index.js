@@ -18,6 +18,10 @@ const routes = [
       { path: 'plan/wo', name: 'WorkOrder', component: () => import('../views/plan/WorkOrder.vue'), meta: { title: '工单管理', icon: 'Tickets', group: '计划管理' } },
       { path: 'plan/wo/:id', name: 'WoDetail', component: () => import('../views/plan/WoDetail.vue'), meta: { title: '工单详情', icon: 'Tickets', group: '计划管理', hidden: true } },
 
+      { path: 'exec/simulator', name: 'Simulator', component: () => import('../views/exec/Simulator.vue'), meta: { title: '过站模拟器', icon: 'Monitor', group: '生产执行' } },
+      { path: 'exec/sn', name: 'SnList', component: () => import('../views/exec/SnList.vue'), meta: { title: 'SN 管理', icon: 'Barcode', group: '生产执行' } },
+      { path: 'exec/log', name: 'StationLog', component: () => import('../views/exec/StationLog.vue'), meta: { title: '过站流水', icon: 'DocumentCopy', group: '生产执行' } },
+
       { path: 'base/material', name: 'Material', component: () => import('../views/base/Material.vue'), meta: { title: '物料管理', icon: 'Box', roles: ['admin'], group: '基础数据' } },
       { path: 'base/material-batch', name: 'MaterialBatch', component: () => import('../views/base/MaterialBatch.vue'), meta: { title: '物料批次', icon: 'Files', roles: ['admin', 'quality'], group: '基础数据' } },
       { path: 'base/bom', name: 'Bom', component: () => import('../views/base/Bom.vue'), meta: { title: 'BOM 管理', icon: 'SetUp', roles: ['admin'], group: '基础数据' } },

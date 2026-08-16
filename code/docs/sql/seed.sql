@@ -66,8 +66,8 @@ INSERT INTO md_routing (id, routing_code, routing_name, product_material_id, ver
 (2, 'RT-TWSX1', 'TWS-X1 整机装配工艺路线(二期+声学)', 1, 2, 2);
 
 INSERT INTO md_routing_operation (routing_id, seq, operation_code, check_rules) VALUES
--- V1
-(1, 10, 'OP-IQC',       JSON_OBJECT('snType','MACHINE','requirePrev',false)),
+-- V1（IQC 扫批次不扫 SN，snType=MATERIAL 使其不进入任何 SN 的工序序列）
+(1, 10, 'OP-IQC',       JSON_OBJECT('snType','MATERIAL','requirePrev',false)),
 (1, 20, 'OP-BURN-L',    JSON_OBJECT('snType','LEFT','requirePrev',true,'testItems',JSON_ARRAY(JSON_OBJECT('key','firmware','op','eq','value','1.2.5')))),
 (1, 30, 'OP-BURN-R',    JSON_OBJECT('snType','RIGHT','requirePrev',true,'testItems',JSON_ARRAY(JSON_OBJECT('key','firmware','op','eq','value','1.2.5')))),
 (1, 40, 'OP-RF-L',      JSON_OBJECT('snType','LEFT','requirePrev',true,'testItems',JSON_ARRAY(JSON_OBJECT('key','tx_power','op','ge','value',-2)))),
@@ -82,7 +82,7 @@ INSERT INTO md_routing_operation (routing_id, seq, operation_code, check_rules) 
 (1, 130,'OP-CARTON',    JSON_OBJECT('snType','MACHINE','requirePrev',true)),
 (1, 140,'OP-WEIGH',     JSON_OBJECT('snType','MACHINE','requirePrev',true)),
 -- V2(二期: 烧录后加左右耳声学测试,提前拦截麦克风问题批次)
-(2, 10, 'OP-IQC',       JSON_OBJECT('snType','MACHINE','requirePrev',false)),
+(2, 10, 'OP-IQC',       JSON_OBJECT('snType','MATERIAL','requirePrev',false)),
 (2, 20, 'OP-BURN-L',    JSON_OBJECT('snType','LEFT','requirePrev',true,'testItems',JSON_ARRAY(JSON_OBJECT('key','firmware','op','eq','value','1.2.5')))),
 (2, 25, 'OP-ACOUS-L',   JSON_OBJECT('snType','LEFT','requirePrev',true,'testItems',JSON_ARRAY(JSON_OBJECT('key','mic_sensitivity','op','ge','value',-38)))),
 (2, 30, 'OP-BURN-R',    JSON_OBJECT('snType','RIGHT','requirePrev',true,'testItems',JSON_ARRAY(JSON_OBJECT('key','firmware','op','eq','value','1.2.5')))),

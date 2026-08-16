@@ -6,9 +6,16 @@
           <span>工单 {{ wo.woNo }}
             <el-tag :type="statusTag[wo.status]" style="margin-left:10px">{{ statusMap[wo.status] }}</el-tag>
           </span>
-          <el-button @click="$router.back()">返回</el-button>
+          <span>
+            <el-button v-if="!wo.snGenerated && canOperate" type="warning" @click="genSn">生成整机 SN</el-button>
+            <el-button @click="$router.back()">返回</el-button>
+          </span>
         </div>
       </template>
+      <el-progress v-if="wo.planQty" :percentage="Math.min(100, Math.round((wo.okQty || 0) / wo.planQty * 100))"
+                   :stroke-width="18" :text-inside="true" status="success"
+                   :format="p => `完工进度 ${p}%（${wo.okQty}/${wo.planQty}）`"
+                   style="margin-bottom:14px" />
       <el-descriptions :column="3" border>
         <el-descriptions-item label="成品">{{ vo?.productMaterialCode }} {{ vo?.productMaterialName }}</el-descriptions-item>
         <el-descriptions-item label="工艺路线（快照版本）">{{ vo?.routingName }} V{{ wo.routingVersion }}</el-descriptions-item>
@@ -44,14 +51,17 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
+import { ElMessage } from 'element-plus'
 import { pageWo, getWo } from '../../api/wo'
+import { generateMachine } from '../../api/exec'
 
 const route = useRoute()
 const wo = ref(null)
 const vo = ref(null)
 const operations = ref([])
+const canOperate = computed(() => ['admin', 'planner'].includes(localStorage.getItem('roleCode') || ''))
 const statusMap = { CREATED: '已创建', RELEASED: '已下达', IN_PROGRESS: '生产中', PAUSED: '已暂停', COMPLETED: '已完工', CLOSED: '已关闭' }
 const statusTag = { CREATED: 'info', RELEASED: '', IN_PROGRESS: 'success', PAUSED: 'warning', COMPLETED: 'success', CLOSED: 'info' }
 const typeMap = { NORMAL: '普通', TEST: '测试', BIND: '绑定', AGING: '老化', PACK: '包装', IQC: '检验' }
@@ -61,14 +71,21 @@ const pretty = s => {
   try { return JSON.stringify(JSON.parse(s)) } catch (e) { return s }
 }
 
-onMounted(async () => {
+async function reload() {
   const d = await getWo(route.params.id)
   wo.value = d.wo
   operations.value = d.operations
-  // 列表接口取关联名称（物料/路线）
   const p = await pageWo({ keyword: d.wo.woNo, size: 1 })
   vo.value = p.list[0] || null
-})
+}
+
+async function genSn() {
+  const n = await generateMachine(wo.value.id)
+  ElMessage.success(`已生成 ${n} 个整机 SN，可去"生产执行 → SN 管理"查看`)
+  reload()
+}
+
+onMounted(reload)
 </script>
 
 <style scoped>
