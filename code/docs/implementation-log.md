@@ -22,6 +22,8 @@
 | 10 | 08-17 06:04 | **系统服务** | Redis 注册为 Windows 服务（服务名 `Redis`，自启动配置文件 `redis.windows-service.conf`），并先终止了此前手动启动的残留 redis-server 进程（PID 12832） | 服务管理器 services.msc 可查；日志 `C:\WorkSpace\Env\tools\redis\win\` | `redis-server --service-uninstall --service-name Redis` 卸载 |
 | 11 | 08-17 06:05 | 下载 | npm install 前端依赖（vue/element-plus/echarts 等，npmmirror 源，秒级完成） | `mes-discrete/code/mes-tws-ui/node_modules/` | 删 node_modules 重装即可 |
 | 12 | 08-17 06:10 | 下载 | Maven 首次构建拉取依赖（阿里云镜像，spring-boot 2.7.18 全家桶等） | `C:\Users\DELL\.m2\repository\` | Maven 标准缓存，无需处理 |
+| 13 | 08-17 07:55 | **数据库重建** | 修正种子叙事反转 bug（见问题#13）后 `DROP DATABASE mes_tws` 并重导 init+seed，随后经 API 重放演示数据（0021 绑定/过站/NG/维修/重测） | 本机 MySQL mes_tws 库 | 重跑 SQL 可复现 |
+| 14 | 08-17 08:15 | 新增 | 学习文档三件套 | `code/README.md`、`code/docs/study-map.md`、`code/docs/references.md` | - |
 
 > 审计说明：MySQL 服务（3306）与 JDK21/Maven/Node24 均为机器原有，未安装、未升级、未改配置。除上表外无其他下载/删除/系统改动。
 
@@ -190,3 +192,25 @@
 **验证（curl 全绿）**：正向 0021（问题批维修机）命中 8 条时间线 + D04 REPAIRED 维修史；反向 PCLB240801 命中 22 台整机（状态分布/不良计数正确），耗时 ~100ms；trace_task 留痕正常。
 
 **前端产物**：正向追溯页（SN 档案 + 绑定子件表 + el-timeline 过站时间线（NG 标红/重测轮次/测试数据）+ 维修史）；反向追溯页（批次摘要 alert + 受影响整机清单，可点击跳正向）；双向互跳。
+
+---
+
+## M6 收尾（2026-08-17 08:10~08:30）
+
+**产物**：
+- Dashboard 总览接真实数据（`/api/dashboard/summary`：生产中工单/今日过站/待修不良/综合 FPY + 工单进度 + 最近过站 + 体验路线 Steps）；聚合接口放 mes-server（依赖全模块，避免质量↔追溯互相依赖）
+- `code/README.md`：环境要求/启动步骤/账号表/**十分钟体验路线**（含故事线提示）/与生产版差异表/常用命令
+- `code/docs/study-map.md`：阅读顺序、代码↔飞书文档对照表、逐模块导读（过站链路/状态机/FPY 口径推导）、**动手练习清单 6 组**（从复制 CRUD 页到 JMeter 压测、MQ 替换、分表）、调试技巧、面试串讲
+- `code/docs/references.md`：参考项目与 License 红线备忘
+- CONTEXT.md 回写代码交付信息；skill.md 项目目录表同步说明（AGENTS.md/Cursor 入口无需改）
+
+**最终验证（全部通过）**：
+- 后端 `mvn install` ✓，前端 `npm run build` ✓（10.8s）
+- Dashboard：生产中工单 1 / 今日过站 5 / 待修不良 2 / FPY 96.9%（数据为重放后的演示状态）
+- 全链路验收路径（README 十分钟路线）各环节均经 curl 实测：登录→基础数据→工单→绑定/过站/NG→维修回流→重测→良率→正反追溯
+
+## 收尾状态
+
+- 服务：后端 8080 运行中、前端 dev 5173 运行中、Redis（Windows 服务）与 MySQL（原有）在跑——明早可直接打开 http://localhost:5173 体验
+- git：mes-discrete 仓库共 7+ 次里程碑提交（chore 初始化 → m1 骨架 → m2 基础数据+工单 → m3 过站引擎 → m4 质量 → m5 追溯 → m6 收尾）
+- 遗留小项（不影响使用）：trace_task 表的 cost_ms 记 0（保存动作发生在计时结束前，真实耗时以接口返回的 costMs 为准）；M3 段描述的 0021 号 NG 演示在库重建重放后已完成维修闭环（不良单 REPAIRED），当前库内 OPEN 不良为声学站拦截的 L-PCLB240801-W2-0002/0006 两条，留给维修工作台演示

@@ -3,6 +3,7 @@
 ## 简介
 
 离散制造 MES（制造执行系统）项目迁移与面试/简历包装。基于企业常用 Java 技术栈与三层架构（Controller / Service / Mapper）梳理。
+**2026-08-17 新增可运行学习版代码**（Vue3 + Spring Boot 2.7，四模块+基础数据），见下方"代码实现"。
 
 ## 当前阶段（第三轮迁移，2026-08-16 启动）
 
@@ -13,7 +14,17 @@
 - [x] 指南增补（2026-08-17）：四模块各加"表结构详细设计"章节——工单 2 表（plan_work_order 含乐观锁 version、plan_wo_operation 快照含 check_rules JSON）、执行 4 表（sn_registry 状态快照/月分表 station_log 含 retest_flag/loading/binding）、质量 3 表（defect_record/repair_record/fai_record）、追溯 1 任务表 + 源表索引对照表；与主文档表清单同体系
 - [x] 飞书文档迁入用户知识库（2026-08-17，space 7673794303308221628）：主文档在根层级，简历指南与口述稿挂为主文档子节点
 - [x] 面试口述稿（飞书子文档）已交付：3 分钟自我介绍逐字稿、四模块追问答法（口语版 14 问）、四个 STAR 踩坑故事、边界话术+压力应对、数字快答卡、七天演练计划；共 5 张 Mermaid 图
-- [ ] 按需深化：全真模拟陪练（用户随时开练）；MES 素材至此闭环，后续可切换其他项目（smart-inspection-center / cave-virtual-classroom）
+- [x] **可运行学习版代码（2026-08-17，Agent 自主实施完成）**：见下节
+- [ ] 按需深化：全真模拟陪练（用户随时开练）
+
+## 代码实现（2026-08-17 交付，mes-discrete 即独立 git 仓库）
+
+- **位置**：`mes-discrete/code/`（`mes-tws` 后端 Maven 多模块 + `mes-tws-ui` 前端 Vue3 + `docs/`）
+- **范围**：工单管理（状态机+快照+乐观锁）、生产执行（**过站引擎八规则链**+Redis锁+唯一索引、一机多码/三码绑定/上料、过站模拟器）、质量管理（不良/维修回流/FPY双口径/首件）、追溯（正反向+任务留痕）+ 基础数据七域；Dashboard 总览
+- **启动**：见 `code/README.md`（MySQL 导入 `docs/sql/init.sql+seed.sql` → mvn spring-boot:run → npm run dev；账号 admin/planner1/qc1/op1，密码 123456）
+- **学习配套**：`code/docs/study-map.md`（模块↔飞书文档对照+阅读顺序+动手练习清单）、`code/docs/references.md`（开源参考项目与借鉴点）、`code/docs/implementation-log.md`（实现全过程+**操作审计表**：所有下载/删除/系统改动留痕，含 Redis 装为 Windows 服务、MySQL 密码=mysql 等）
+- **本机环境**：JDK21（编译目标1.8）/Node24/MySQL8(3306,root/mysql)/Redis(6379，服务名 Redis)；种子数据内置"问题麦克风批次"完整故事线（V1 FCT暴露 vs V2 声学站提前拦截）
+- **git**：`mes-discrete/` 单独建仓（用户指示），按里程碑 7 次提交；与简历叙事差异清单见 README（前端 Vue3 vs 叙事 Vue2 等 6 项）
 
 ## 飞书文档
 
