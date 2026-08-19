@@ -178,6 +178,7 @@ CREATE TABLE md_defect_code (
   defect_name  VARCHAR(100) NOT NULL,
   category     VARCHAR(20) DEFAULT 'OTHER' COMMENT 'APPEARANCE外观/FUNC功能/ACOUSTIC声学/ASSEMBLE装配/OTHER',
   status       TINYINT     NOT NULL DEFAULT 1,
+  create_time  DATETIME    NULL DEFAULT CURRENT_TIMESTAMP,
   UNIQUE KEY uk_defect_code (defect_code)
 ) ENGINE=InnoDB COMMENT='不良代码';
 
