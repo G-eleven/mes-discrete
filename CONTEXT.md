@@ -24,7 +24,7 @@
 - **启动**：见 `code/README.md`（MySQL 导入 `docs/sql/init.sql+seed.sql` → mvn spring-boot:run → npm run dev；账号 admin/planner1/qc1/op1，密码 123456）
 - **学习配套**：`code/docs/study-map.md`（模块↔飞书文档对照+阅读顺序+动手练习清单）、`code/docs/references.md`（开源参考项目与借鉴点）、`code/docs/implementation-log.md`（实现全过程+**操作审计表**：所有下载/删除/系统改动留痕，含 Redis 装为 Windows 服务、MySQL 密码=mysql 等）
 - **本机环境**：JDK21（编译目标1.8）/Node24/MySQL8(3306,root/mysql)/Redis(6379，服务名 Redis)；种子数据内置"问题麦克风批次"完整故事线（V1 FCT暴露 vs V2 声学站提前拦截）
-- **git**：`mes-discrete/` 单独建仓（用户指示），按里程碑 7 次提交；与简历叙事差异清单见 README（前端 Vue3 vs 叙事 Vue2 等 6 项）
+- **git**：`mes-discrete/` 单独建仓（用户指示），按里程碑 7 次提交；与简历叙事差异清单见 README（前端 Vue3 vs 叙事 Vue2 等 6 项）。**2026-08-19 已推送 GitHub 公开仓库**：https://github.com/G-eleven/mes-discrete （SSH over 443，推送链路坑见根 `skill.md`）
 
 ## 飞书文档
 
