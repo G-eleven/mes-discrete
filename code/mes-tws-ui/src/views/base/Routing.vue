@@ -181,7 +181,7 @@ async function del(row) {
 }
 
 onMounted(async () => {
-  const mats = await listMaterial('PRODUCT')
+  const mats = await listMaterial({ materialType: 'PRODUCT' })
   products.value = mats
   operations.value = await listOperation()
   load()

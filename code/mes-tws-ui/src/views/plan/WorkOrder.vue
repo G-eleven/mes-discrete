@@ -164,7 +164,7 @@ async function doTransition(row, action) {
 }
 
 onMounted(async () => {
-  products.value = await listMaterial('PRODUCT')
+  products.value = await listMaterial({ materialType: 'PRODUCT' })
   load()
 })
 </script>
