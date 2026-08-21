@@ -98,39 +98,39 @@ public class WorkOrderService {
             throw new BizException("工艺路线与成品物料不匹配");
 
         PlanWorkOrder wo = new PlanWorkOrder();
-        wo.setWoNo(nextWoNo());
+        wo.setWoNo(nextWoNo()); // 生成单号
         wo.setProductMaterialId(productMaterialId);
         wo.setBomId(bomId);
         wo.setRoutingId(routingId);
-        wo.setRoutingVersion(routing.getVersion());
+        wo.setRoutingVersion(routing.getVersion()); // 把路线「当时的版本号」固化到工单上
         wo.setPlanQty(planQty);
         wo.setOkQty(0);
         wo.setNgQty(0);
         wo.setSnGenerated(0);
         wo.setStatus(MesConst.WO_CREATED);
-        wo.setVersion(0);
+        wo.setVersion(0); // 乐观锁初始版本 = 0
         wo.setPlanStartDate(planStart);
         wo.setPlanEndDate(planEnd);
         wo.setCreateBy(currentUserService.currentUsername());
-        woMapper.insert(wo);
+        woMapper.insert(wo); // ← 写第一张表 plan_work_order
 
         // 工艺路线快照（核心设计：工单与路线版本解耦）
         List<MdRoutingOperation> routingOps = routingOpMapper.selectList(
                 new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<MdRoutingOperation>()
                         .eq(MdRoutingOperation::getRoutingId, routingId)
-                        .orderByAsc(MdRoutingOperation::getSeq));
+                        .orderByAsc(MdRoutingOperation::getSeq)); // 查出这条路线的所有工序
         Map<String, MdOperation> opDict = operationMapper.selectList(null).stream()
-                .collect(Collectors.toMap(MdOperation::getOperationCode, o -> o, (a, b) -> a));
+                .collect(Collectors.toMap(MdOperation::getOperationCode, o -> o, (a, b) -> a)); // 工序字典
         for (MdRoutingOperation rop : routingOps) {
             PlanWoOperation snap = new PlanWoOperation();
-            snap.setWorkOrderId(wo.getId());
+            snap.setWorkOrderId(wo.getId()); // 把工序绑到刚建的工单
             snap.setSeq(rop.getSeq());
             snap.setOperationCode(rop.getOperationCode());
             MdOperation dict = opDict.get(rop.getOperationCode());
             snap.setOperationName(dict == null ? rop.getOperationCode() : dict.getOperationName());
             snap.setOperationType(dict == null ? "NORMAL" : dict.getOperationType());
-            snap.setCheckRules(rop.getCheckRules());
-            woOpMapper.insert(snap);
+            snap.setCheckRules(rop.getCheckRules()); // 把防呆规则 JSON 一起拷过来
+            woOpMapper.insert(snap); // ← 写第二张表 plan_wo_operation（N 行）
         }
         return wo;
     }

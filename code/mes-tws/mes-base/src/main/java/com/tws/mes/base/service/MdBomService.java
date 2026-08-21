@@ -49,6 +49,7 @@ public class MdBomService {
             row.put("id", it.getId());
             row.put("childMaterialId", it.getChildMaterialId());
             row.put("quantity", it.getQuantity());
+            row.put("operationCode", it.getOperationCode());
             MdMaterial m = materialMapper.selectById(it.getChildMaterialId());
             if (m != null) {
                 row.put("materialCode", m.getMaterialCode());

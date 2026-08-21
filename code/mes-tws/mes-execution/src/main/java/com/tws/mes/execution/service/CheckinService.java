@@ -50,6 +50,7 @@ public class CheckinService {
     private final ApplicationEventPublisher eventPublisher;
     /** Spring 注入所有 CheckRule 实现，按 order 排序成链 */
     private final List<CheckRule> rules;
+    private final LoadingService loadingService;
 
     @Transactional
     public java.util.Map<String, Object> checkin(CheckinDTO dto) {
@@ -132,6 +133,10 @@ public class CheckinService {
                     sn.setFirmwareVersion(String.valueOf(dto.getTestData().get("firmware")));
                 }
                 snMapper.updateById(sn);
+                // 按 MBOM 定额扣减本工位上料台账与批次库存（消耗闭环）
+                if (wo.getBomId() != null) {
+                    loadingService.consume(wo.getId(), station.getStationCode(), woOp.getOperationCode(), wo.getBomId());
+                }
             } else {
                 // NG：SN 停线，自动开不良单（OPEN），等维修闭环
                 sn.setStatus(MesConst.SN_NG);

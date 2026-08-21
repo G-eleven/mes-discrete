@@ -8,11 +8,13 @@ import com.tws.mes.execution.entity.SnBinding;
 import com.tws.mes.execution.entity.SnRegistry;
 import com.tws.mes.execution.entity.StationLog;
 import com.tws.mes.execution.service.CheckinService;
+import com.tws.mes.execution.service.LoadingService;
 import com.tws.mes.execution.service.SnService;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -24,6 +26,7 @@ public class ExecutionController {
 
     private final CheckinService checkinService;
     private final SnService snService;
+    private final LoadingService loadingService;
 
     /* ---------- 过站（扫码枪/模拟器） ---------- */
 
@@ -56,11 +59,48 @@ public class ExecutionController {
         return Result.ok();
     }
 
+    @Data
+    public static class LoadingDTO {
+        private Long workOrderId;
+        private String stationCode;
+        private Long materialId;
+        private String batchNo;
+        private Integer loadingQty;
+    }
+
+    /** 上料防错：校验批次物料匹配工位 MBOM + 批次未冻结 → 写台账 + 记流水 */
     @SaCheckRole(value = {"admin", "operator", "quality"}, mode = cn.dev33.satoken.annotation.SaMode.OR)
     @PostMapping("/station/loading")
-    public Result<Void> loading(@RequestBody Map<String, String> body) {
-        snService.loading(body.get("stationCode"), body.get("batchNo"));
-        return Result.ok();
+    public Result<Map<String, Object>> loading(@RequestBody LoadingDTO dto) {
+        loadingService.loading(dto.getWorkOrderId(), dto.getStationCode(),
+                dto.getMaterialId(), dto.getBatchNo(), dto.getLoadingQty());
+
+        Map<String,Object> map = new HashMap<>();
+        map.put("success", true);
+        return Result.ok(map);
+    }
+
+    /** 齐套计算：工单+工位 → 应上物料清单 + 已上量 + 缺口 + 状态 */
+    @SaCheckRole(value = {"admin", "operator", "quality"}, mode = cn.dev33.satoken.annotation.SaMode.OR)
+    @GetMapping("/loading/kitting")
+    public Result<Map<String, Object>> kitting(@RequestParam Long woId,
+                                               @RequestParam String stationCode) {
+        return Result.ok(loadingService.kitting(woId, stationCode));
+    }
+
+    /** 上料看板：工单所有需上料工位的齐套汇总（按工序分组） */
+    @SaCheckRole(value = {"admin", "operator", "quality"}, mode = cn.dev33.satoken.annotation.SaMode.OR)
+    @GetMapping("/loading/board")
+    public Result<List<Map<String, Object>>> loadingBoard(@RequestParam Long woId) {
+        return Result.ok(loadingService.board(woId));
+    }
+
+    /** 当前工位已上批次台账（看板右栏 + 退料参考） */
+    @SaCheckRole(value = {"admin", "operator", "quality"}, mode = cn.dev33.satoken.annotation.SaMode.OR)
+    @GetMapping("/loading/ledger")
+    public Result<List<Map<String, Object>>> loadingLedger(@RequestParam(required = false) Long woId,
+                                                            @RequestParam String stationCode) {
+        return Result.ok(loadingService.ledger(woId, stationCode));
     }
 
     /* ---------- SN ---------- */

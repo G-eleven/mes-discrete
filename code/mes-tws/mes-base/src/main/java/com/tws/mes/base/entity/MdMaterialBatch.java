@@ -20,6 +20,10 @@ public class MdMaterialBatch {
     private String supplier;
     private LocalDateTime arriveTime;
     private Integer quantity;
+    /** 已消耗量（过站按 BOM 定额扣减累计；学习版预留，暂不自动扣） */
+    private Integer consumedQty;
+    /** 剩余量（= quantity - consumedQty，上料防错与低量预警的依据） */
+    private Integer remainQty;
     /** 1 可用 / 0 冻结 */
     private Integer status;
     private LocalDateTime createTime;

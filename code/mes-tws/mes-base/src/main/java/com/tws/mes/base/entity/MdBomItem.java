@@ -15,4 +15,6 @@ public class MdBomItem {
     private Long bomId;
     private Long childMaterialId;
     private Double quantity;
+    /** 投料工序编码（MBOM：标记该子件在哪道工序上料/消耗），NULL=未指定 */
+    private String operationCode;
 }

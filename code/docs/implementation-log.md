@@ -24,6 +24,7 @@
 | 12 | 08-17 06:10 | 下载 | Maven 首次构建拉取依赖（阿里云镜像，spring-boot 2.7.18 全家桶等） | `C:\Users\DELL\.m2\repository\` | Maven 标准缓存，无需处理 |
 | 13 | 08-17 07:55 | **数据库重建** | 修正种子叙事反转 bug（见问题#13）后 `DROP DATABASE mes_tws` 并重导 init+seed，随后经 API 重放演示数据（0021 绑定/过站/NG/维修/重测） | 本机 MySQL mes_tws 库 | 重跑 SQL 可复现 |
 | 14 | 08-17 08:15 | 新增 | 学习文档三件套 | `code/README.md`、`code/docs/study-map.md`、`code/docs/references.md` | - |
+| 15 | 08-22 00:50 | 代码增强 | 工位上料模块重构（齐套计算 + 上料防错 + 台账看板）：①`md_bom_item` 加 `operation_code` 投料工位字段（MBOM）；②`md_material_batch` 加 `consumed_qty/remain_qty`；③新建 `station_loading` 上料台账表；④后端新增 `LoadingService`（kitting 齐套/loading 防错/ledger 台账）+ `ExecutionController` 加 `/loading/kitting`、`/loading/board`、`/loading/ledger` 接口、改造 `/station/loading` 为防错上料；⑤`LoadingRule` 从 count 流水改为按物料维度齐套校验；⑥前端新增 `LoadingBoard.vue` 工位上料看板页 + `Simulator.vue` 上料区改为齐套展示。mvn 编译 + npm build 均通过 | `mes-discrete/code/` 多文件（实体/服务/控制器/规则/前端页/SQL）；**需重跑 init.sql+seed.sql** | git revert + 重跑 SQL 可回滚 |
 
 > 审计说明：MySQL 服务（3306）与 JDK21/Maven/Node24 均为机器原有，未安装、未升级、未改配置。除上表外无其他下载/删除/系统改动。
 

@@ -21,6 +21,7 @@ const routes = [
       { path: 'exec/simulator', name: 'Simulator', component: () => import('../views/exec/Simulator.vue'), meta: { title: '过站模拟器', icon: 'Monitor', group: '生产执行' } },
       { path: 'exec/sn', name: 'SnList', component: () => import('../views/exec/SnList.vue'), meta: { title: 'SN 管理', icon: 'Barcode', group: '生产执行' } },
       { path: 'exec/log', name: 'StationLog', component: () => import('../views/exec/StationLog.vue'), meta: { title: '过站流水', icon: 'DocumentCopy', group: '生产执行' } },
+      { path: 'exec/loading', name: 'LoadingBoard', component: () => import('../views/exec/LoadingBoard.vue'), meta: { title: '工位上料看板', icon: 'Box', group: '生产执行' } },
 
       { path: 'quality/defect', name: 'DefectList', component: () => import('../views/quality/DefectList.vue'), meta: { title: '不良与维修', icon: 'WarningFilled', group: '质量管理' } },
       { path: 'quality/fpy', name: 'FpyReport', component: () => import('../views/quality/FpyReport.vue'), meta: { title: '良率报表', icon: 'DataAnalysis', group: '质量管理' } },

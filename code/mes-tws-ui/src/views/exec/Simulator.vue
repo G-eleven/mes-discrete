@@ -91,12 +91,17 @@
         </el-card>
 
         <el-card style="margin-bottom:14px">
-          <template #header>工位上料</template>
-          <div style="display:flex;gap:8px">
-            <el-select v-model="loadingBatch" filterable placeholder="选择批次" style="flex:1">
-              <el-option v-for="b in batches" :key="b.batchNo" :label="`${b.batchNo}（${b.supplier || ''}）`" :value="b.batchNo" />
-            </el-select>
-            <el-button type="primary" @click="doLoading">上料到 {{ stationCode || '当前工位' }}</el-button>
+          <template #header>工位上料齐套</template>
+          <div v-if="!stationCode" class="hint">请先选工位</div>
+          <div v-else-if="!kittingData" class="hint">该工位无需上料</div>
+          <div v-else>
+            <div v-for="it in kittingData.items" :key="it.materialId" style="display:flex;justify-content:space-between;font-size:12px;padding:3px 0">
+              <span>{{ it.materialCode }} {{ it.materialName }}</span>
+              <span :style="{color: it.status==='SHORT'?'var(--el-color-danger)':it.status==='LOW_WARN'?'var(--el-color-warning)':'var(--el-color-success)',fontWeight:500}">
+                {{ it.loadedQty }}/{{ it.requiredQty }}{{ it.status==='SHORT'?' 缺':it.status==='LOW_WARN'?' ⚠':' ✓' }}
+              </span>
+            </div>
+            <el-button size="small" type="primary" link @click="$router.push('/exec/loading')">去工位上料看板 →</el-button>
           </div>
         </el-card>
 
@@ -121,7 +126,8 @@
 <script setup>
 import { reactive, ref, computed, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
-import { checkin, stationContext, bind, loading, pageSn, nextSn, pageLog } from '../../api/exec'
+import { checkin, stationContext, bind, pageSn, nextSn, pageLog } from '../../api/exec'
+import { kitting as fetchKitting } from '../../api/loading'
 import { pageWo } from '../../api/wo'
 import { listStation, listDefectCode, listBatch } from '../../api/base'
 
@@ -137,7 +143,7 @@ const ctx = ref(null)
 const testData = reactive({})
 const checkinForm = reactive({ sn: '', result: 'OK', ngCode: undefined })
 const bindForm = reactive({ machineSn: '', LEFT: '', RIGHT: '', CASE: '' })
-const loadingBatch = ref('')
+const kittingData = ref(null)
 const lastMsg = ref('')
 const lastOk = ref(false)
 const submitting = ref(false)
@@ -160,12 +166,23 @@ async function onWoChange() { if (stationCode.value) onStationChange() }
 
 async function onStationChange() {
   ctx.value = null
+  kittingData.value = null
   Object.keys(testData).forEach(k => delete testData[k])
   if (!woId.value || !stationCode.value) return
   ctx.value = await stationContext({ woId: woId.value, stationCode: stationCode.value })
   loadRecent()
+  loadKitting()
   // 预填测试项的期望值（演示方便，可改）
   testItems.value.forEach(t => { testData[t.key] = String(t.value) })
+}
+
+async function loadKitting() {
+  if (!ctx.value?.exists || !ctx.value.requireLoading) { kittingData.value = null; return }
+  try {
+    kittingData.value = await fetchKitting({ woId: woId.value, stationCode: stationCode.value })
+  } catch {
+    kittingData.value = null
+  }
 }
 
 async function loadRecent() {
@@ -223,13 +240,6 @@ async function doBind() {
     .map(t => ({ sn: bindForm[t], bindType: t }))
   await bind({ machineSn: bindForm.machineSn, stationCode: bindStation.value, children })
   ElMessage.success('绑定成功')
-  loadRecent()
-}
-
-async function doLoading() {
-  if (!stationCode.value || !loadingBatch.value) return ElMessage.warning('请选择工位与批次')
-  await loading({ stationCode: stationCode.value, batchNo: loadingBatch.value })
-  ElMessage.success('上料成功')
   loadRecent()
 }
 

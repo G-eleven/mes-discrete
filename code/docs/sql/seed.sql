@@ -30,15 +30,15 @@ INSERT INTO md_material (id, material_code, material_name, material_type, unit, 
 (11,'CARTON-M',  '中箱(20台装)',        'PACK',    'PCS', NULL,                   0, NULL, NULL);
 
 -- ---------------- 物料批次(注意 PCL240801-B 是"问题批次") ----------------
-INSERT INTO md_material_batch (id, material_id, batch_no, supplier, arrive_time, quantity, status) VALUES
-(1, 2, 'PCLA240801', '协丰电子', '2026-08-01 08:30:00', 5000, 1),
-(2, 2, 'PCLB240801', '协丰电子', '2026-08-01 10:00:00', 300,  0), -- 左耳PCBA问题批:贴片使用了华科问题麦克风,发现后已冻结
-(3, 3, 'PCRA240801', '协丰电子', '2026-08-01 08:30:00', 5000, 1),
-(4, 4, 'PCCA240801', '协丰电子', '2026-08-01 08:30:00', 5000, 1),
-(5, 5, 'MICA240701', '美声电声', '2026-07-01 09:00:00', 50000,1),
-(6, 5, 'MICB240715', '华科电声', '2026-07-15 14:00:00', 20000,0), -- 麦克风问题批(灵敏度偏移),已冻结
-(7, 6, 'BATA240801', '新能动力', '2026-08-01 08:00:00', 20000,1),
-(8, 7, 'SPKA240801', '声学精密', '2026-08-01 08:00:00', 20000,1);
+INSERT INTO md_material_batch (id, material_id, batch_no, supplier, arrive_time, quantity, consumed_qty, remain_qty, status) VALUES
+(1, 2, 'PCLA240801', '协丰电子', '2026-08-01 08:30:00', 5000, 0, 5000, 1),
+(2, 2, 'PCLB240801', '协丰电子', '2026-08-01 10:00:00', 300,  0, 300,  0), -- 左耳PCBA问题批:贴片使用了华科问题麦克风,发现后已冻结
+(3, 3, 'PCRA240801', '协丰电子', '2026-08-01 08:30:00', 5000, 0, 5000, 1),
+(4, 4, 'PCCA240801', '协丰电子', '2026-08-01 08:30:00', 5000, 0, 5000, 1),
+(5, 5, 'MICA240701', '美声电声', '2026-07-01 09:00:00', 50000, 0, 50000, 1),
+(6, 5, 'MICB240715', '华科电声', '2026-07-15 14:00:00', 20000, 0, 20000, 0), -- 麦克风问题批(灵敏度偏移),已冻结
+(7, 6, 'BATA240801', '新能动力', '2026-08-01 08:00:00', 20000, 0, 20000, 1),
+(8, 7, 'SPKA240801', '声学精密', '2026-08-01 08:00:00', 20000, 0, 20000, 1);
 
 -- ---------------- 工序字典 ----------------
 INSERT INTO md_operation (id, operation_code, operation_name, operation_type) VALUES
@@ -102,8 +102,11 @@ INSERT INTO md_routing_operation (routing_id, seq, operation_code, check_rules) 
 -- ---------------- BOM ----------------
 INSERT INTO md_bom (id, bom_code, product_material_id, version, status) VALUES
 (1, 'BOM-TWSX1', 1, 'V1.0', 1);
-INSERT INTO md_bom_item (bom_id, child_material_id, quantity) VALUES
-(1,2,1),(1,3,1),(1,4,1),(1,5,4),(1,6,2),(1,7,2),(1,8,3),(1,9,1),(1,10,1),(1,11,0.05);
+-- MBOM: operation_code 标记每个子件在哪道工序投料(上料防错与齐套计算的依据)
+INSERT INTO md_bom_item (bom_id, child_material_id, quantity, operation_code) VALUES
+(1,2,1,'OP-BURN-L'),(1,3,1,'OP-BURN-R'),(1,4,1,'OP-CASE-ASSY'),(1,5,4,'OP-CASE-ASSY'),
+(1,6,2,'OP-CASE-ASSY'),(1,7,2,'OP-CASE-ASSY'),(1,8,3,'OP-COUPLE'),(1,9,1,'OP-CASE-ASSY'),
+(1,10,1,'OP-BOXING'),(1,11,0.05,'OP-CARTON');
 
 -- ---------------- 产线与工位 ----------------
 INSERT INTO md_line (id, line_code, line_name, workshop) VALUES
@@ -336,6 +339,12 @@ CALL seed_wo2();
 INSERT INTO station_log (sn, work_order_id, station_code, operation_code, record_type, batch_no, test_data, operator, create_time) VALUES
 ('LOADING-0001', 2, 'L1-CASE-ASSY', 'OP-CASE-ASSY', 'LOADING', 'BATA240801', JSON_OBJECT('material_code','BAT-401'), 'op1', '2026-08-16 07:50:00'),
 ('LOADING-0002', 2, 'L1-CASE-ASSY', 'OP-CASE-ASSY', 'LOADING', 'SPKA240801', JSON_OBJECT('material_code','SPK-301'), 'op1', '2026-08-16 07:52:00');
+
+-- 工单2 上料台账(对应上面两条LOADING流水): 已上 BAT-401(剩1200低量)/SPK-301(剩8000),
+-- 缺 PCBA-CASE/MIC-6027/CASE-SHELL 三种 —— 看板演示"待上料+低量预警"两种状态
+INSERT INTO station_loading (work_order_id, station_code, operation_code, material_id, batch_no, loading_qty, remain_qty, status, operator, create_time) VALUES
+(2, 'L1-CASE-ASSY', 'OP-CASE-ASSY', 6, 'BATA240801', 20000, 1200, 'ACTIVE', 'op1', '2026-08-16 07:50:00'),
+(2, 'L1-CASE-ASSY', 'OP-CASE-ASSY', 7, 'SPKA240801', 20000, 8000, 'ACTIVE', 'op1', '2026-08-16 07:52:00');
 
 -- 工单1 一条 FAI 记录
 INSERT INTO fai_record (work_order_id, operation_code, sn, result, checker, remark, create_time) VALUES

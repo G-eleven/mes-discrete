@@ -57,12 +57,22 @@ public class SnService {
         return PageResult.of(p.getTotal(), p.getRecords());
     }
 
-    /** 模拟器辅助：某工单下"下一个待过某工序"的 SN（减少手输） */
+    /**
+     * 模拟器辅助：取"下一个待过某工序"的 SN（减少手输）。
+     * - 整机(MACHINE)：属于指定工单、未过 beforeSeq 工序；
+     * - 部件(LEFT/RIGHT/CASE)：来料池不属工单，按"未绑定(parentSn 为空) + 类型"取，跳过工单过滤。
+     */
     public SnRegistry nextSn(Long workOrderId, Integer beforeSeq, String snType) {
-        LambdaQueryWrapper<SnRegistry> qw = new LambdaQueryWrapper<SnRegistry>()
-                .eq(SnRegistry::getWorkOrderId, workOrderId)
-                .eq(StrUtil.isNotBlank(snType), SnRegistry::getSnType, snType)
-                .in(SnRegistry::getStatus, MesConst.SN_INIT, MesConst.SN_IN_LINE, MesConst.SN_RETEST);
+        LambdaQueryWrapper<SnRegistry> qw = new LambdaQueryWrapper<SnRegistry>();
+        if ("MACHINE".equals(snType)) {
+            // 整机按工单过滤
+            qw.eq(SnRegistry::getWorkOrderId, workOrderId);
+        } else {
+            // 部件为来料池，不绑工单；按"未绑定"过滤，避免取回已绑定的子件
+            qw.isNull(SnRegistry::getParentSn);
+        }
+        qw.eq(StrUtil.isNotBlank(snType), SnRegistry::getSnType, snType)
+          .in(SnRegistry::getStatus, MesConst.SN_INIT, MesConst.SN_IN_LINE, MesConst.SN_RETEST);
         if (beforeSeq != null) {
             qw.lt(SnRegistry::getCurrentSeq, beforeSeq);
         }

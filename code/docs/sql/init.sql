@@ -58,9 +58,11 @@ CREATE TABLE md_material_batch (
   batch_no    VARCHAR(50) NOT NULL COMMENT '批次号',
   supplier    VARCHAR(100) DEFAULT NULL,
   arrive_time DATETIME    DEFAULT NULL COMMENT '到料时间',
-  quantity    INT         DEFAULT 0,
-  status      TINYINT     NOT NULL DEFAULT 1 COMMENT '1可用 0冻结',
-  create_time DATETIME    DEFAULT CURRENT_TIMESTAMP,
+  quantity     INT         DEFAULT 0,
+  consumed_qty INT         NOT NULL DEFAULT 0 COMMENT '已消耗量(过站扣减累计)',
+  remain_qty   INT         NOT NULL DEFAULT 0 COMMENT '剩余量(=quantity-consumed_qty)',
+  status       TINYINT     NOT NULL DEFAULT 1 COMMENT '1可用 0冻结',
+  create_time  DATETIME    DEFAULT CURRENT_TIMESTAMP,
   UNIQUE KEY uk_batch (batch_no),
   KEY idx_material (material_id)
 ) ENGINE=InnoDB COMMENT='物料批次';
@@ -86,7 +88,9 @@ CREATE TABLE md_bom_item (
   bom_id             BIGINT        NOT NULL,
   child_material_id  BIGINT        NOT NULL,
   quantity           DECIMAL(10,2) NOT NULL DEFAULT 1 COMMENT '单位用量',
-  KEY idx_bom (bom_id)
+  operation_code     VARCHAR(50)   DEFAULT NULL COMMENT '投料工序编码(MBOM):该子件在哪道工序上料',
+  KEY idx_bom (bom_id),
+  KEY idx_op (operation_code)
 ) ENGINE=InnoDB COMMENT='BOM 子件明细';
 
 -- ------------------------------------------------------------
@@ -276,6 +280,29 @@ CREATE TABLE station_log (
   KEY idx_time (create_time),
   KEY idx_batch (batch_no)
 ) ENGINE=InnoDB COMMENT='过站/上料/绑定流水';
+
+-- ------------------------------------------------------------
+-- 12.1 工位上料台账（齐套校验与上料看板的数据源）
+--      一次上料动作=一行；status: ACTIVE 在用 / UNLOADED 已退料
+-- ------------------------------------------------------------
+DROP TABLE IF EXISTS station_loading;
+CREATE TABLE station_loading (
+  id             BIGINT      PRIMARY KEY AUTO_INCREMENT,
+  work_order_id  BIGINT      NOT NULL,
+  station_code   VARCHAR(50) NOT NULL,
+  operation_code VARCHAR(50) DEFAULT NULL,
+  material_id    BIGINT      NOT NULL,
+  batch_no       VARCHAR(50) NOT NULL,
+  loading_qty    INT         NOT NULL DEFAULT 0 COMMENT '上料量',
+  remain_qty     INT         NOT NULL DEFAULT 0 COMMENT '剩余量(过站扣减递减)',
+  status         VARCHAR(10) NOT NULL DEFAULT 'ACTIVE' COMMENT 'ACTIVE在用/UNLOADED已退料',
+  operator       VARCHAR(50) DEFAULT NULL,
+  create_time    DATETIME    DEFAULT CURRENT_TIMESTAMP,
+  update_time    DATETIME    DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  KEY idx_wo_station (work_order_id, station_code),
+  KEY idx_material (material_id),
+  KEY idx_batch (batch_no)
+) ENGINE=InnoDB COMMENT='工位上料台账';
 
 -- ------------------------------------------------------------
 -- 13. SN 绑定关系（多级: 左/右耳+盒->整机, 整机->彩盒->中箱）

@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>MES 实战学习手册 · 八步由浅入深</title>
+<style>
+  :root{
+    --bg:#f7f8fa; --card:#ffffff; --ink:#1f2329; --sub:#61666d;
+    --line:#e5e6eb; --brand:#2f6fed; --brand2:#0fa36b; --warn:#d4380d; --soft:#eef3ff;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:-apple-system,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;
+       background:var(--bg);color:var(--ink);line-height:1.7;font-size:15px}
+  .wrap{max-width:1080px;margin:0 auto;padding:32px 20px 80px}
+  header{background:linear-gradient(120deg,#2f6fed,#0fa36b);color:#fff;border-radius:16px;padding:28px 30px;margin-bottom:24px}
+  header h1{margin:0 0 8px;font-size:26px}
+  header p{margin:0;opacity:.92}
+  .toc{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:18px 22px;margin-bottom:24px}
+  .toc h3{margin:0 0 10px;font-size:15px;color:var(--sub)}
+  .toc ol{margin:0;padding-left:20px}
+  .toc a{color:var(--brand);text-decoration:none}
+  .toc a:hover{text-decoration:underline}
+  section{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:24px 26px;margin-bottom:22px}
+  section h2{margin:0 0 4px;font-size:20px}
+  .tag{display:inline-block;font-size:12px;font-weight:600;padding:2px 10px;border-radius:20px;margin-bottom:12px}
+  .t-core{background:#fff1e8;color:#d4380d}
+  .t-base{background:var(--soft);color:var(--brand)}
+  .t-biz{background:#eafaf1;color:var(--brand2)}
+  .lead{color:var(--sub);margin:6px 0 16px}
+  h3{font-size:16px;margin:20px 0 8px}
+  .flow{background:#fafbfc;border:1px dashed var(--line);border-radius:10px;padding:14px 16px;margin:12px 0;font-size:14px}
+  .flow b{color:var(--brand)}
+  .kv{width:100%;border-collapse:collapse;margin:12px 0;font-size:14px}
+  .kv th,.kv td{border:1px solid var(--line);padding:8px 10px;vertical-align:top;text-align:left}
+  .kv th{background:var(--soft);width:140px;color:var(--sub);font-weight:600}
+  code{background:#f0f2f5;border-radius:5px;padding:1px 6px;font-size:13px;font-family:"SFMono-Regular",Consolas,monospace}
+  pre{background:#0f1729;color:#e6edf3;border-radius:10px;padding:14px 16px;overflow:auto;font-size:13px;line-height:1.55}
+  pre .c{color:#7f8ea3}
+  .ok{color:var(--brand2);font-weight:600}
+  .bad{color:var(--warn);font-weight:600}
+  .note{background:var(--soft);border-left:4px solid var(--brand);border-radius:6px;padding:10px 14px;margin:12px 0;font-size:14px}
+  table.compare{width:100%;border-collapse:collapse;margin:12px 0;font-size:14px}
+  table.compare th,table.compare td{border:1px solid var(--line);padding:8px 10px}
+  table.compare th{background:var(--soft)}
+  .endline{border-top:2px dashed var(--line);margin-top:18px;padding-top:14px;color:var(--sub)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <h1>MES 实战学习手册 · 八步由浅入深</h1>
+  <p>离散制造 MES（TWS 蓝牙耳机整机装配）· 按你给的顺序：登录鉴权 → 物料CRUD → 工艺路线+快照 → 工单状态机+乐观锁 → 过站八规则链 → 维修回流 → FPY双口径 → 正反向追溯</p>
+</header>
+
+<div class="toc">
+  <h3>先看这一页（30 秒建立全局观）</h3>
+  <ol>
+    <li><a href="#m0">项目地图：前端 Vue3 + 后端 Spring Boot 三层</a></li>
+    <li><a href="#m1">① 登录/鉴权（Sa-Token）</a></li>
+    <li><a href="#m2">② 物料 CRUD（标准三层模板）</a></li>
+    <li><a href="#m3">③ 工艺路线版本 + 快照</a></li>
+    <li><a href="#m4">④ 工单状态机 + 乐观锁</a></li>
+    <li><a href="#m5">⑤ 过站引擎八规则链（核心！）</a></li>
+    <li><a href="#m6">⑥ 维修回流闭环</a></li>
+    <li><a href="#m7">⑦ FPY 双口径 SQL</a></li>
+    <li><a href="#m8">⑧ 正反向追溯</a></li>
+    <li><a href="#m9">收尾：一条 SN 的完整体验旅程</a></li>
+  </ol>
+</div>
+
+<!-- ========== 全局观 ========== -->
+<section id="m0">
+  <h2>项目地图：前端 Vue3 + 后端 Spring Boot 三层</h2>
+  <p class="lead">你缺的是“这堆代码到底在干什么”的地图。先把骨架记住，后面每一步都挂在这副骨架上。</p>
+
+  <div class="flow">
+    <b>页面点击</b>（Vue 组件，<code>mes-tws-ui/src/views/*</code>）<br>
+    → <b>axios 请求</b>（<code>mes-tws-ui/src/api/*.js</code>，URL 前缀 <code>/api</code>）<br>
+    → <b>后端 Controller</b>（<code>mes-tws/各模块/.../controller/*</code>，路由形如 <code>/api/xxx</code>）<br>
+    → <b>Service</b>（业务逻辑，<code>.../service/*</code>）<br>
+    → <b>Mapper / MyBatis-Plus</b> 操作 <b>MySQL 表</b>
+  </div>
+
+  <h3>后端 6 个 Maven 模块（按职责分）</h3>
+  <table class="kv">
+    <tr><th>模块</th><td><code>mes-base</code> 基础数据（物料/工艺路线/工位/字典）；<code>mes-execution</code> 生产执行（工单/过站/SN绑定）；<code>mes-quality</code> 质量（不良/维修/FPY）；<code>mes-trace</code> 追溯；<code>mes-server</code> 启动+拦截器配置；<code>mes-common</code> 公共（Result/PageResult/Redis锁）</td></tr>
+    <tr><th>贯穿三件套</th><td>① 统一返回 <code>Result&lt;T&gt;</code> / <code>PageResult&lt;T&gt;</code>（code=200 成功，401/403 鉴权）；② 三层模板 Controller→Service→Mapper（MyBatis-Plus 通用 CRUD）；③ Sa-Token 拦截所有 <code>/api/**</code></td></tr>
+    <tr><th>账号</th><td><code>admin</code> / <code>planner1</code>（计划员）/ <code>qc1</code>（质量）/ <code>op1</code>（操作工），密码均 <code>123456</code>。角色：admin / planner / quality / operator</td></tr>
+  </table>
+  <div class="note">记住一句话：<b>前端一个按钮 → 一个 <code>/api/...</code> 接口 → 一个 Controller 方法 → 一个 Service 方法 → 一张或几张表</b>。下面每一步都按这个模板拆给你看。</div>
+</section>
+
+<!-- ========== 1 登录 ========== -->
+<section id="m1">
+  <span class="tag t-base">基础 · 地基</span>
+  <h2>① 登录 / 鉴权（Sa-Token）</h2>
+  <p class="lead">一切的起点。为什么后面每个接口都要带 <code>satoken</code>？就是这一步发的。</p>
+
+  <h3>业务含义</h3>
+  <p>操作工在 PDA/电脑上登录，系统校验账号密码，发一个 <b>token</b>。之后每次点按钮，浏览器自动把 token 放进请求头，后端靠它知道“你是谁、有什么角色”，没带或过期就拦回去。这就是 Sa-Token 干的活。</p>
+
+  <div class="flow">
+    <b>页面</b>：<code>mes-tws-ui/src/views/login/Login.vue</code> 点「登录」<br>
+    → <b>axios</b>：<code>src/api/auth.js</code> 的 <code>loginApi({username,password})</code> → <code>POST /api/auth/login</code><br>
+    → 返回的 token 存 <code>localStorage.satoken</code>，<code>src/api/request.js</code> 拦截器自动给后续请求加 <code>satoken</code> 头<br>
+    → <b>Controller</b>：<code>AuthController</code> <code>@RequestMapping("/api/auth")</code> → <code>login(LoginDTO)</code><br>
+    → <b>Service</b>：<code>AuthService.login()</code>：查 <code>sys_user</code> → BCrypt 校验密码 → 校验 <code>status==1</code> → <code>StpUtil.login(userId)</code> 签发 token<br>
+    → 返回 <code>token / userId / username / roleCode</code>
+  </div>
+
+  <h3>鉴权怎么生效（两个开关）</h3>
+  <table class="kv">
+    <tr><th>登录拦截</th><td><code>mes-server/.../config/WebConfig.java</code> 注册 <code>SaInterceptor</code>，拦截所有 <code>/api/**</code>，放行 <code>/api/auth/login</code>。没登录 → 401。</td></tr>
+    <tr><th>角色拦截</th><td><code>StpInterfaceImpl.getRoleList()</code> 从 <code>sys_user.role_code</code> 取角色；接口上写 <code>@SaCheckRole("admin")</code> 才允许（如物料的保存/删除）。无权限 → 403。</td></tr>
+    <tr><th>用户表</th><td><code>sys_user</code>：<code>id / username / password(BCrypt密文) / nick_name / role_code / status</code></td></tr>
+  </table>
+
+  <div class="mermaid">
+sequenceDiagram
+    participant U as 登录页 Login.vue
+    participant A as AuthController
+    participant S as AuthService
+    participant DB as sys_user表
+    U->>A: POST /api/auth/login {username,password}
+    A->>S: login()
+    S->>DB: 查用户 + BCrypt校验
+    DB-->>S: 用户记录
+    S->>S: StpUtil.login(userId) 签发token
+    S-->>A: {token, roleCode...}
+    A-->>U: Result(token)
+    Note over U: 存localStorage.satoken<br/>后续请求自动带satoken头
+  </div>
+  <p class="endline"><b>学完这一层你该记住：</b>token 是后面所有接口的“门票”；<code>WebConfig</code> 管“有没有登录”，<code>@SaCheckRole</code> 管“有没有权限”。</p>
+</section>
+
+<!-- ========== 2 物料 ========== -->
+<section id="m2">
+  <span class="tag t-base">基础 · 模板</span>
+  <h2>② 物料 CRUD（标准三层模板）</h2>
+  <p class="lead">这是全项目 CRUD 的“母版”。后面工艺路线、字典、客户……全是复制它的套路。吃透这一个，其余一看就懂。</p>
+
+  <div class="flow">
+    <b>页面</b>：<code>mes-tws-ui/src/views/base/Material.vue</code><br>
+    → <b>axios</b>：<code>src/api/material.js</code> → <code>GET /api/material/page</code>（查询）、<code>POST /api/material/save</code>（新增/编辑）、<code>DELETE /api/material/{id}</code>（删除）<br>
+    → <b>Controller</b>：<code>MdMaterialController</code> <code>@RequestMapping("/api/material")</code><br>
+    → <b>Service</b>：<code>MdMaterialService.page() / save() / delete()</code><br>
+    → <b>Mapper</b>：<code>MdMaterialMapper extends BaseMapper&lt;MdMaterial&gt;</code>（MyBatis-Plus 自带增删改查，不用写 SQL）
+  </div>
+
+  <h3>三层模板长什么样</h3>
+  <pre><span class="c">// Controller —— 只收参、调 Service、包 Result</span>
+@RestController
+@RequiredArgsConstructor
+@RequestMapping("/api/material")
+public class MdMaterialController {
+  private final MdMaterialService service;
+  @GetMapping("/page")  public Result&lt;PageResult&lt;MdMaterial&gt;&gt; page(...) { return Result.ok(service.page(...)); }
+  @SaCheckRole("admin")
+  @PostMapping("/save") public Result&lt;Void&gt; save(@RequestBody MdMaterial m) { service.save(m); return Result.ok(); }
+  @SaCheckRole("admin")
+  @DeleteMapping("/{id}") public Result&lt;Void&gt; delete(@PathVariable Long id) { service.delete(id); return Result.ok(); }
+}
+
+<span class="c">// Service —— 业务校验在这里（如编码唯一）</span>
+public void save(MdMaterial m){
+  // 编码唯一校验 ...
+  if (m.getId()==null) mapper.insert(m); else mapper.updateById(m);
+}
+
+<span class="c">// Entity —— 直接绑定表</span>
+@TableName("md_material")
+public class MdMaterial {
+  private Long id;
+  private String materialCode;     <span class="c">// 物料编码</span>
+  private String materialName;
+  private String materialType;     <span class="c">// PRODUCT/SEMI/KEY/RAW/PACK</span>
+  private String unit, spec, supplier;
+  private Boolean batchManaged;    <span class="c">// 是否管批次</span>
+  private Integer status;
+}</pre>
+
+  <table class="kv">
+    <tr><th>表</th><td><code>md_material</code>：<code>id, material_code, material_name, material_type(PRODUCT成品/SEMI半成品/KEY关键料/RAW原料/PACK包材), unit, spec, batch_managed, supplier, status</code></td></tr>
+    <tr><th>统一返回</th><td><code>Result&lt;T&gt;</code>（单对象/成功标志）、<code>PageResult&lt;T&gt;</code>（分页：total + list）。所有接口都套这俩。</td></tr>
+    <tr><th>分页</th><td>MyBatis-Plus 的 <code>Page</code> + <code>LambdaQueryWrapper</code> 拼 keyword/类型条件，一行 <code>selectPage</code> 出结果。</td></tr>
+  </table>
+  <p class="endline"><b>学完这一层你该记住：</b>“Controller 薄、Service 厚、Mapper 用 MyBatis-Plus 通用方法”。写操作加 <code>@SaCheckRole("admin")</code>。这套模板会贯穿基础数据全部模块。</p>
+</section>
+
+<!-- ========== 3 工艺路线 ========== -->
+<section id="m3">
+  <span class="tag t-biz">业务 · 模板</span>
+  <h2>③ 工艺路线版本 + 快照</h2>
+  <p class="lead">工艺路线 = 这个产品要过哪些工序、每道工序要防什么呆。它是“模板”，真正干活的是它被复制到工单里的“快照”。</p>
+
+  <h3>业务含义</h3>
+  <p>做一只 TWS 耳机，要先烧录→RF→组装→声学→左右耳耦合→盒段→三码绑定→老化→FCT→外观→包装。这条“工序清单 + 每道工序的防呆规则”就是工艺路线。它会<b>升版</b>（今天 8 道工序，明天改成 9 道）。但已经在做的工单，绝不能因为它升版就跟着变——所以建工单时要<b>拍快照</b>，把当时的工序和规则原样复制一份。</p>
+
+  <div class="flow">
+    <b>页面</b>：<code>mes-tws-ui/src/views/base/Routing.vue</code><br>
+    → <b>axios</b>：<code>GET /api/routing/page</code>（列表）、<code>POST /api/routing/save</code>（存草稿）、<code>POST /api/routing/{id}/publish</code>（发布）、复制新版本=取数据改名再 save<br>
+    → <b>Controller</b>：<code>MdRoutingController</code> <code>@RequestMapping("/api/routing")</code><br>
+    → <b>Service</b>：<code>MdRoutingService.save() / publish() / releasedList()</code><br>
+    → <b>表</b>：<code>md_routing</code>（路线头）、<code>md_routing_operation</code>（路线工序，含 <code>check_rules</code> JSON）、<b>快照</b><code>plan_wo_operation</code>
+  </div>
+
+  <table class="kv">
+    <tr><th>md_routing</th><td><code>routing_code, version(整数递增), status(0停用/1草稿/2已发布)</code>，唯一键 <code>(routing_code, version)</code></td></tr>
+    <tr><th>md_routing_operation</th><td><code>routing_id, seq(工序顺序), operation_code, check_rules(防呆规则JSON)</code></td></tr>
+    <tr><th>plan_wo_operation（快照）</th><td><code>work_order_id, seq, operation_code, operation_name, operation_type, check_rules</code> —— 建工单时从上面复制而来，<b>之后与路线脱钩</b></td></tr>
+  </table>
+
+  <div class="mermaid">
+flowchart LR
+  A[md_routing 模板<br/>version=2 已发布] -->|WorkOrderService.create 复制| B[plan_wo_operation 快照<br/>绑定到某个工单]
+  A -.->|路线升版到 v3| C[md_routing version=3]
+  B -.->|快照不变| D[在制工单按 v2 工序走]
+  </div>
+  <div class="note"><b>为什么叫“快照”是核心设计？</b> 客户审厂要求“证明你当时就是这么生产的”。路线升版不影响在制工单，<code>plan_wo_operation</code> 永远封存“建单那一刻”的工艺——这就是追溯的证据链起点。</div>
+  <p class="endline"><b>学完这一层你该记住：</b>路线是“活模板”（会升版），快照是“死证据”（建单时固化）。过站时查的是<b>快照</b> <code>plan_wo_operation</code>，不是路线主数据。</p>
+</section>
+
+<!-- ========== 4 工单 ========== -->
+<section id="m4">
+  <span class="tag t-biz">业务 · 核心</span>
+  <h2>④ 工单状态机 + 乐观锁</h2>
+  <p class="lead">工单 = “这一批要做 5000 只耳机”的生产令。它有一套严格的状态流转（状态机），还要防两个计划员同时改同一张单（乐观锁）。</p>
+
+  <h3>业务含义</h3>
+  <p>工单生命周期：<code>CREATED 新建 → RELEASED 下达 → IN_PROGRESS 开工 → PAUSED 暂停 → IN_PROGRESS 恢复 → COMPLETED 完工 → CLOSED 关闭</code>。不能从“新建”直接跳“完工”——这就是状态机的护栏。两个计划员同时点“下达”同一张单，后者的修改不能把前者的覆盖掉——这就是乐观锁。</p>
+
+  <div class="flow">
+    <b>页面</b>：<code>mes-tws-ui/src/views/plan/WorkOrder.vue</code><br>
+    → <b>axios</b>：<code>GET /api/wo/page</code>、<code>POST /api/wo/create</code>、<code>POST /api/wo/{id}/{action}</code>（action=release/start/pause/resume/complete/close）<br>
+    → <b>Controller</b>：<code>WorkOrderController</code> <code>@RequestMapping("/api/wo")</code><br>
+    → <b>Service</b>：<code>WorkOrderService.create()</code>（同时拍路线快照！）/ <code>transition(id, action)</code><br>
+    → <b>表</b>：<code>plan_work_order</code>
+  </div>
+
+  <h3>状态机：一张“允许迁移表”</h3>
+  <pre><span class="c">// WorkOrderService 里的静态迁移表 —— 加一种流转只加一行</span>
+TRANSITIONS = Map.of(
+  "release",  List.of(CREATED,     RELEASED),
+  "start",    List.of(RELEASED,    IN_PROGRESS),
+  "pause",    List.of(IN_PROGRESS, PAUSED),
+  "resume",   List.of(PAUSED,      IN_PROGRESS),
+  "complete", List.of(IN_PROGRESS, COMPLETED),
+  "close",    List.of(COMPLETED,    CLOSED)
+);
+<span class="c">// transition() 先查当前状态是否匹配“前置”，不匹配就抛“不能执行”</span></pre>
+
+  <h3>乐观锁：用版本号代替数据库锁</h3>
+  <pre><span class="c">// 实体上挂 @Version，配置类注册拦截器</span>
+@TableName("plan_work_order")
+public class PlanWorkOrder {
+  private String woNo;
+  private Long routingId, routingVersion;  <span class="c">// 快照时的路线版本</span>
+  private String status;                    <span class="c">// CREATED/RELEASED/...</span>
+  @Version private Integer version;         <span class="c">// 乐观锁，默认 0</span>
+}
+<span class="c">// MesInfraConfig 注册 OptimisticLockerInnerInterceptor</span>
+<span class="c">// update 时自动带 WHERE version=? 并在成功时 version+1</span>
+<span class="c">// 两人并发改同一单 → 后者更新 0 行 → 抛“请刷新重试”</span></pre>
+
+  <div class="mermaid">
+stateDiagram-v2
+  [*] --> CREATED
+  CREATED --> RELEASED : release
+  RELEASED --> IN_PROGRESS : start
+  IN_PROGRESS --> PAUSED : pause
+  PAUSED --> IN_PROGRESS : resume
+  IN_PROGRESS --> COMPLETED : complete
+  COMPLETED --> CLOSED : close
+  </div>
+  <p class="endline"><b>学完这一层你该记住：</b>① 建工单那一刻就调用路线快照（回到第③步）；② 状态机用“迁移表”实现，非法跳转直接拦；③ 乐观锁用 <code>version</code> 字段，避免长事务锁表。</p>
+</section>
+
+<!-- ========== 5 过站八规则链 ========== -->
+<section id="m5">
+  <span class="tag t-core">核心 · 重中之重</span>
+  <h2>⑤ 过站引擎八规则链（核心！）</h2>
+  <p class="lead">“过站”= 一个 SN 在某个工位扫一下、过了这道工序。这是整个 MES 最值钱的一段——后面面试八成围绕它。它要用 8 条防呆规则把“跳站/重过/混料/漏测”全拦住。</p>
+
+  <h3>业务含义</h3>
+  <p>操作工在工位上扫 SN + 工位码，系统判断“这个 SN 现在能不能过这道工序”。判断过程就是<b>八条规则按顺序跑一遍</b>，任何一条不过就拦截并告诉工人为什么（比如“顺序不对：请先过 RF 站”）。过了就记一条流水、把 SN 往前推一道工序。</p>
+
+  <div class="flow">
+    <b>页面</b>：<code>mes-tws-ui/src/views/exec/Simulator.vue</code>（过站模拟器）点「提交过站」<br>
+    → <b>axios</b>：<code>src/api/exec.js</code> <code>checkin</code> → <code>POST /api/station/checkin</code>（动态表单按规则渲染测试项/绑定/上料提示，来自 <code>GET /api/station/context</code>）<br>
+    → <b>Controller</b>：<code>ExecutionController.checkin(CheckinDTO)</code><br>
+    → <b>Service</b>：<code>CheckinService.checkin()</code> <code>@Transactional</code><br>
+    → ① 工位码→工序、SN→工单→<b>快照工序</b>（再看第③步，这里查的是 plan_wo_operation）<br>
+    → ② 加 <b>Redis 锁</b>（防双击/重放）<br>
+    → ③ 跑 <b>八规则链</b>（按 order 顺序）<br>
+    → ④ 落 <code>station_log</code> + 推进 <code>sn_registry</code>（NG 自动开不良单）<br>
+    → ⑤ 发 <code>StationCheckinEvent</code> 异步更新工单数量
+  </div>
+
+  <h3>八规则链：策略列表 + order 排序 + for 循环（不是经典 next 指针）</h3>
+  <pre><span class="c">// Spring 把所有 CheckRule Bean 注入 List，按 order 升序排成链</span>
+List&lt;CheckRule&gt; chain = rules.stream().sorted(Comparator.comparingInt(CheckRule::order)).toList();
+for (CheckRule rule : chain) rule.check(ctx);  <span class="c">// 任一抛 BizException 即拦截</span></pre>
+
+  <div class="mermaid">
+flowchart TD
+  START([工位码→工序 / SN→工单→快照工序]) --> LOCK[Redis锁 SET NX PX5000]
+  LOCK --> R1["10 WoStatusRule<br/>工单须 IN_PROGRESS"]
+  R1 --> R2["20 SnValidRule<br/>SN合法性/类型匹配"]
+  R2 --> R3["30 OpenDefectRule<br/>无OPEN不良/非NG(维修回流)"]
+  R3 --> R4["40 SeqRule<br/>工序顺序/未重复通过"]
+  R4 --> R5["50 DuplicateRule<br/>重复过站"]
+  R5 --> R6["60 BindingRule<br/>三码绑定完整"]
+  R6 --> R7["70 LoadingRule<br/>上料批次已上"]
+  R7 --> R8["80 TestItemRule<br/>固件/声学参数比对"]
+  R8 --> OK([写station_log + 推进sn_registry])
+  R1 -.任一失败.-> ERR[拦截+面向工人的提示]
+  R2 -.-> ERR
+  R3 -.-> ERR
+  R4 -.-> ERR
+  R5 -.-> ERR
+  R6 -.-> ERR
+  R7 -.-> ERR
+  R8 -.-> ERR
+  </div>
+
+  <table class="kv">
+    <tr><th>order</th><th>规则类</th><th>防什么（对应你列的八大类）</th></tr>
+    <tr><td>10</td><td><code>WoStatusRule</code></td><td>工单状态必须是开工中（未开工/暂停/完工都拦）</td></tr>
+    <tr><td>20</td><td><code>SnValidRule</code></td><td>SN 合法性（左耳站扫到右耳 SN 拦）</td></tr>
+    <tr><td>30</td><td><code>OpenDefectRule</code></td><td>维修回流 + 前置测试 NG 闭环（带病/未维修完拦）</td></tr>
+    <tr><td>40</td><td><code>SeqRule</code></td><td>工序顺序（前置工序没过不能跳站）</td></tr>
+    <tr><td>50</td><td><code>DuplicateRule</code></td><td>重复过站（同 SN+工位+轮次已 OK 拦）</td></tr>
+    <tr><td>60</td><td><code>BindingRule</code></td><td>包装绑定 / 三码绑定（子件未绑齐拦）</td></tr>
+    <tr><td>70</td><td><code>LoadingRule</code></td><td>上料批次（需上料工位须先有 LOADING 流水）</td></tr>
+    <tr><td>80</td><td><code>TestItemRule</code></td><td>固件版本/声学参数/前置测试 NG 判定（逐项比对，提示“期望vs实际”）</td></tr>
+  </table>
+
+  <h3>重复过站的三道防线（面试必问）</h3>
+  <table class="kv">
+    <tr><th>① Redis 锁</th><td><code>RedisLockService</code>：key <code>mes:lock:checkin:{sn}:{stationCode}</code>，<code>SET NX PX 5000</code>（5 秒），Lua 脚本比对 token 再删。挡“双击/并发重放”。</td></tr>
+    <tr><th>② DuplicateRule</th><td>查 <code>station_log</code>：同 SN+工位+轮次已 OK 计数&gt;0 则拦。</td></tr>
+    <tr><th>③ 唯一索引</th><td><code>station_log.checkin_key = sn:stationCode:retestRound</code>，<code>UNIQUE KEY uk_checkin_key</code>。INSERT 触发 <code>DuplicateKeyException</code> → 兜底一切并发。</td></tr>
+  </table>
+
+  <h3>成功过站写了什么</h3>
+  <table class="kv">
+    <tr><th><code>station_log</code></th><td><code>sn, work_order_id, station_code, operation_code, seq, record_type=CHECKIN, result=OK/NG, ng_code, test_data(JSON固件等), retest_round, checkin_key, operator</code></td></tr>
+    <tr><th><code>sn_registry</code></th><td>推进 <code>current_seq</code>；状态 <code>IN_LINE</code>（末道→<code>DONE</code>）；含固件则写 <code>firmware_version</code>。NG 时状态 <code>NG</code> 并插 <code>defect_record(OPEN)</code></td></tr>
+    <tr><th>上料/绑定</th><td><code>POST /api/station/loading</code> → <code>SnService.loading()</code> 写 <code>record_type=LOADING</code>；<code>POST /api/station/bind</code> → <code>SnService.bind()</code> 写 <code>sn_binding</code>（唯一键防重绑）+ <code>record_type=BINDING</code></td></tr>
+  </table>
+  <p class="endline"><b>学完这一层你该记住：</b>八规则是“策略列表按 order 跑 for 循环”，加新规则只需新增一个 Bean（零改主流程）。重复过站靠“Redis锁→查库→唯一索引”三道防线。过站只校验+落库，统计走异步（事件/MQ）。</p>
+</section>
+
+<!-- ========== 6 维修 ========== -->
+<section id="m6">
+  <span class="tag t-biz">业务 · 闭环</span>
+  <h2>⑥ 维修回流闭环</h2>
+  <p class="lead">过站 NG 会自动开不良单。维修员修好后，这台机器要能“流回”产线重测——而且重测不能污染良率口径。这就是闭环。</p>
+
+  <div class="flow">
+    <b>页面</b>：<code>mes-tws-ui/src/views/quality/DefectList.vue</code><br>
+    → <b>axios</b>：<code>GET /api/defect/page</code>、<code>POST /api/defect/repair</code>（维修提交）、<code>POST /api/defect/manual</code>（复检开单）、<code>GET /api/defect/repairs</code>（维修史）<br>
+    → <b>Controller</b>：<code>QualityController</code> <code>@RequestMapping("/api/defect")</code><br>
+    → <b>Service</b>：<code>QualityService.repair(RepairDTO) / defectPage() / manualDefect() / repairsOf()</code><br>
+    → <b>表</b>：<code>defect_record</code>、<code>repair_record</code>、<code>sn_registry</code>
+  </div>
+
+  <div class="mermaid">
+flowchart LR
+  A[过站NG] --> B[CheckinService 插 defect_record OPEN<br/>sn_registry=NG 停线]
+  B --> C[DefectList 点维修处理<br/>POST /api/defect/repair]
+  C --> D{QualityService.repair}
+  D -->|修好 OK| E[defect=REPAIRED<br/>sn_registry=RETEST<br/>写 repair_record]
+  D -->|修不好 NG| F[defect=SCRAP<br/>sn_registry=SCRAP]
+  E --> G[回原工位重扫<br/>OpenDefectRule放行]
+  G --> H[CheckinService<br/>retest_round+1 重新过站]
+  </div>
+
+  <table class="kv">
+    <tr><th><code>defect_record</code></th><td><code>sn, work_order_id, station_code, defect_code, discover_type(CHECKIN/RECHECK/AUDIT), repair_round, status(OPEN/REPAIRED/SCRAP)</code></td></tr>
+    <tr><th><code>repair_record</code></th><td><code>defect_id, sn, action, root_cause, change_batch_no, result(OK/NG), repairer</code></td></tr>
+    <tr><th>回流关键</th><td>维修 OK → <code>sn_registry.status=RETEST</code>；回线重扫时 <code>CheckinService.nextRetestRound(sn)</code> 令 <code>retest_round+1</code>。<code>OpenDefectRule</code> 只拦 <code>status=NG</code> 或存在 <code>OPEN</code> 不良单者 → 修好的能重过，且 retest_round&gt;0 在 FPY 里被排除（见第⑦步）。</td></tr>
+  </table>
+  <p class="endline"><b>学完这一层你该记住：</b>闭环 = “开单(OPEN) → 维修(REPAIRED/SCRAP) → 回流重测(RETEST, retest_round+1)”。维修结果通过 <code>sn_registry</code> 状态回流到工单/工序，且重测机不污染 FPY。</p>
+</section>
+
+<!-- ========== 7 FPY ========== -->
+<section id="m7">
+  <span class="tag t-biz">业务 · 指标</span>
+  <h2>⑦ FPY 双口径 SQL</h2>
+  <p class="lead">客户既要“一次直通率”（不含返修），又要“最终良率”（含返修）。两套口径都得算得清——靠一条 SQL 的左连接差异实现。</p>
+
+  <div class="flow">
+    <b>页面</b>：<code>mes-tws-ui/src/views/quality/FpyReport.vue</code>（ECharts 双轴趋势+柏拉图）<br>
+    → <b>axios</b>：<code>GET /api/fpy/summary</code>、<code>/api/fpy/daily</code>、<code>/api/fpy/pareto</code><br>
+    → <b>Controller</b>：<code>QualityController.fpySummary/fpyDaily/fpyPareto</code><br>
+    → <b>Service</b>：<code>FpyService.summary() / daily() / pareto()</code><br>
+    → <b>SQL</b>：<code>QualityStatMapper.fpyByWo</code>（MyBatis <code>@Select</code>）
+  </div>
+
+  <h3>核心 SQL（真实存在）</h3>
+  <pre><span class="c">-- QualityStatMapper.fpyByWo</span>
+SELECT w.id AS woId, w.wo_no AS woNo, w.plan_qty AS planQty,
+  COUNT(s.id) AS finished,                              <span class="c">-- 已完工整机</span>
+  SUM(CASE WHEN bad.sn IS NULL THEN 1 ELSE 0 END) AS firstPass, <span class="c">-- 一次直通</span>
+  (SELECT COUNT(*) FROM sn_registry s2
+     WHERE s2.work_order_id=w.id AND s2.sn_type='MACHINE' AND s2.status='SCRAP') AS scrapped
+FROM sn_registry s
+JOIN plan_work_order w ON w.id = s.work_order_id
+LEFT JOIN (SELECT DISTINCT sn FROM station_log
+             WHERE record_type='CHECKIN' AND (result='NG' OR retest_round &gt; 0)) bad
+  ON bad.sn = s.sn
+WHERE s.sn_type='MACHINE' AND s.status='DONE'
+GROUP BY w.id, w.wo_no, w.plan_qty ORDER BY w.id</pre>
+
+  <table class="compare">
+    <tr><th>口径</th><th>公式</th><th>含义</th><th>怎么在 SQL 里区分</th></tr>
+    <tr><td><b>FPY 一次直通率</b></td><td>firstPass / finished</td><td>不含返修，反映“一次就做好”的能力</td><td><code>bad</code> 子查询命中“有过 NG 或 retest_round&gt;0 的 SN”，从 finished 里剔掉</td></tr>
+    <tr><td><b>最终良率</b></td><td>finished / (finished + scrapped)</td><td>含返修，修好的也算良品</td><td>只剔除 <code>SCRAP</code> 报废，retest_round&gt;0 的修好机仍计入</td></tr>
+  </table>
+  <div class="note"><b>为什么重测不污染 FPY？</b> 维修回流后的过站 <code>retest_round&gt;0</code>，LEFT JOIN 子查询把它判为“非一次直通”，所以在分子 firstPass 里被排除 —— FPY 因此真实反映首过能力，而最终良率又把修好的算回来。</div>
+  <p class="endline"><b>学完这一层你该记住：</b>双口径 = 同一个 finished 分母，分子差一个“是否剔除 retest_round&gt;0 / NG”。一条 LEFT JOIN 子查询同时服务两个指标。</p>
+</section>
+
+<!-- ========== 8 追溯 ========== -->
+<section id="m8">
+  <span class="tag t-biz">业务 · 追溯</span>
+  <h2>⑧ 正反向追溯</h2>
+  <p class="lead">审厂要“一只耳机出问题，10 分钟查出它用了哪批麦克风、影响了哪些整机”。正向（SN→全档案）和反（批次→整机）都靠同一批索引表。</p>
+
+  <div class="flow">
+    <b>页面</b>：<code>mes-tws-ui/src/views/trace/TraceForward.vue</code>（正向）、<code>TraceReverse.vue</code>（反向）<br>
+    → <b>axios</b>：<code>GET /api/trace/forward/{sn}</code>、<code>GET /api/trace/reverse/{batchNo}</code>、<code>GET /api/trace/tasks</code><br>
+    → <b>Controller</b>：<code>TraceController.forward() / reverse() / tasks()</code><br>
+    → <b>Service</b>：<code>TraceService.forward(sn) / reverse(batchNo) / recentTasks() / saveTask()</code><br>
+    → <b>表</b>：<code>sn_registry / station_log / sn_binding / md_material_batch / defect_record / repair_record / trace_task</code>
+  </div>
+
+  <div class="mermaid">
+flowchart LR
+  subgraph 正向 SN→全档案
+    F1[sn_registry 主档] --> F2[station_log 过站时间线]
+    F1 --> F3[sn_binding 子件+批次]
+    F1 --> F4[defect_record/repair_record]
+  end
+  subgraph 反向 批次→整机
+    R1[md_material_batch 批次] --> R2[sn_registry 部件SN]
+    R2 --> R3[parent_sn 上溯整机]
+    R3 --> R4[统计受影响整机清单]
+  end
+  </div>
+
+  <table class="kv">
+    <tr><th>正向 forward(sn)</th><td>取 <code>sn_registry</code> 主档 → 按 SN 查 <code>station_log</code>(CHECKIN/BINDING) 时间线 → 整机查 <code>sn_binding</code> 子件及 <code>batch_no</code>，部件查 <code>parent_sn</code> 父机 → 关联 defect/repair</td></tr>
+    <tr><th>反向 reverse(batchNo)</th><td>凭 <code>batch_no</code> 查 <code>sn_registry</code> 部件 SN → 经 <code>parent_sn</code> 上溯到 MACHINE 整机，统计受影响数量</td></tr>
+    <tr><th>留痕</th><td>每次追溯 <code>saveTask</code> 写 <code>trace_task</code>(task_no, trace_type, query_key, result_count, cost_ms) —— 直接替代“人工 2 天出报告”</td></tr>
+  </table>
+  <p class="endline"><b>学完这一层你该记住：</b>正向和反向共享 <code>sn_registry</code> 的两个索引列 <code>batch_no</code>（承载批次）和 <code>parent_sn</code>（承载多级绑定）。一码到底，正反向穿透。</p>
+</section>
+
+<!-- ========== 贯穿线 ========== -->
+<section id="m9">
+  <span class="tag t-core">收尾 · 一条 SN 的旅程</span>
+  <h2>把八步串成一条线：一只耳机的完整体验</h2>
+  <p class="lead">现在你应该能把所有模块连起来了。下面这只 SN「MACHINE-0001」的一生，就是八步的串联：</p>
+  <div class="mermaid">
+sequenceDiagram
+    participant 计划员 as 计划员(planner1)
+    participant 系统 as MES后端
+    participant 操作工 as 工位(op1)
+    participant 质量员 as 质检(qc1)
+    计划员->>系统: ①登录拿token → ②建物料 → ③发工艺路线v2
+    计划员->>系统: ④建工单(拍路线快照)+下达开工
+    操作工->>系统: ⑤过站:扫SN+工位 → 八规则链全过 → 写station_log
+    Note over 系统: 三码绑定/上料也走同控制器
+    操作工->>系统: ⑤某站NG → 自动开defect_record(OPEN)
+    质量员->>系统: ⑥维修 → sn_registry=RETEST
+    操作工->>系统: ⑤回流重测(retest_round+1) → 过站
+    质量员->>系统: ⑦看FPY双口径(返修机不污染FPY)
+    客户审厂->>系统: ⑧正向查SN全档案 / 反向查问题批次影响整机
+  </div>
+  <div class="note">这条线就是你的“简历主线”：<b>工单驱动 → 现场执行（过站八规则）→ 质量拦截（维修回流）→ 追溯闭环</b>。每一环都能展开成上面的某一节。</div>
+</section>
+
+<div class="toc">
+  <h3>下一步你可以怎么学</h3>
+  <ol>
+    <li>跑起来：看 <code>code/README.md</code>（MySQL 导入 init.sql+seed.sql → <code>mvn spring-boot:run</code> → <code>npm run dev</code>；账号 admin/planner1/qc1/op1，密码 123456）。</li>
+    <li>用两个浏览器分别登 admin / planner1，同时点同一工单“下达”，亲眼看乐观锁提示。</li>
+    <li>打开 <code>Simulator.vue</code> 过几次站，故意跳站/重过，看八规则怎么拦。</li>
+    <li>想深挖任意一步，告诉我“展开第 X 步”，我带你看真实源码行。</li>
+  </ol>
+</div>
+
+</div>
+
+<script type="module">
+  import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
+  mermaid.initialize({startOnLoad:true, theme:'base',
+    themeVariables:{primaryColor:'#eef3ff',lineColor:'#2f6fed',fontSize:'14px'}});
+</script>
+</body>
+</html>

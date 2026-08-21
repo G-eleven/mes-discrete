@@ -15,6 +15,7 @@
 - [x] 飞书文档迁入用户知识库（2026-08-17，space 7673794303308221628）：主文档在根层级，简历指南与口述稿挂为主文档子节点
 - [x] 面试口述稿（飞书子文档）已交付：3 分钟自我介绍逐字稿、四模块追问答法（口语版 14 问）、四个 STAR 踩坑故事、边界话术+压力应对、数字快答卡、七天演练计划；共 5 张 Mermaid 图
 - [x] **可运行学习版代码（2026-08-17，Agent 自主实施完成）**：见下节
+- [x] **工位上料模块增强（2026-08-22）**：齐套计算+上料防错+台账看板+过站消耗扣减闭环；见下节"代码实现·上料增强"
 - [ ] 按需深化：全真模拟陪练（用户随时开练）
 
 ## 代码实现（2026-08-17 交付，mes-discrete 即独立 git 仓库）
@@ -25,6 +26,7 @@
 - **学习配套**：`code/docs/study-map.md`（模块↔飞书文档对照+阅读顺序+动手练习清单）、`code/docs/references.md`（开源参考项目与借鉴点）、`code/docs/implementation-log.md`（实现全过程+**操作审计表**：所有下载/删除/系统改动留痕，含 Redis 装为 Windows 服务、MySQL 密码=mysql 等）
 - **本机环境**：JDK21（编译目标1.8）/Node24/MySQL8(3306,root/mysql)/Redis(6379，服务名 Redis)；种子数据内置"问题麦克风批次"完整故事线（V1 FCT暴露 vs V2 声学站提前拦截）
 - **git**：`mes-discrete/` 单独建仓（用户指示），按里程碑 7 次提交；与简历叙事差异清单见 README（前端 Vue3 vs 叙事 Vue2 等 6 项）。**2026-08-19 已推送 GitHub 公开仓库**：https://github.com/G-eleven/mes-discrete （SSH over 443，推送链路坑见根 `skill.md`）
+- **上料模块增强（2026-08-22）**：把"上料"从只记一条 LOADING 流水升级为「齐套计算 + 上料防错 + 台账 + 消耗扣减」闭环。①数据：`md_bom_item` 加 `operation_code`（MBOM 投料工位）、`md_material_batch` 加 `consumed_qty/remain_qty`、新建 `station_loading` 台账表；②后端：`LoadingService`（kitting 齐套 / loading 防错 / ledger 台账 / consume 消耗）、`ExecutionController` 加 `/loading/{kitting,board,ledger}`、`LoadingRule` 从 count 流水改为按物料维度齐套校验（缺料报明细）、`CheckinService` 过站 OK 按 MBOM 定额扣台账与批次库存；③前端：`LoadingBoard.vue` 工位上料看板（红绿灯工位卡片 + 上料防错扫码 + 台账）、`Simulator.vue` 上料区改齐套展示+跳转、`Bom.vue` 子件加"投料工位"列编辑。**需重跑 init.sql+seed.sql 启用新表/列/种子**。本机 mvn 在 Git Bash 报 classworlds 错（MSYS 不被识别为 CYGWIN，classpath 路径不转换），**改用 PowerShell 跑 mvn**。详见 `code/docs/implementation-log.md` 审计 #15
 
 ## 飞书文档
 

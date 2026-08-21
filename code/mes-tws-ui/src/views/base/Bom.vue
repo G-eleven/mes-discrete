@@ -54,13 +54,20 @@
             <el-input-number v-model="row.quantity" :min="0.01" :step="1" size="small" style="width:120px" />
           </template>
         </el-table-column>
+        <el-table-column label="投料工位" width="200">
+          <template #default="{ row }">
+            <el-select v-model="row.operationCode" filterable clearable placeholder="选工序" size="small" style="width:100%">
+              <el-option v-for="op in operations" :key="op.operationCode" :label="`${op.operationCode} ${op.operationName}`" :value="op.operationCode" />
+            </el-select>
+          </template>
+        </el-table-column>
         <el-table-column label="操作" width="80">
           <template #default="{ $index }">
             <el-button link type="danger" @click="editor.items.splice($index, 1)">删除</el-button>
           </template>
         </el-table-column>
       </el-table>
-      <el-button style="margin-top:8px;width:100%" @click="editor.items.push({ childMaterialId: undefined, quantity: 1 })">
+      <el-button style="margin-top:8px;width:100%" @click="editor.items.push({ childMaterialId: undefined, quantity: 1, operationCode: '' })">
         + 添加子件
       </el-button>
       <template #footer>
@@ -74,7 +81,7 @@
 <script setup>
 import { reactive, ref, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
-import { pageBom, getBom, saveBom, deleteBom } from '../../api/base'
+import { pageBom, getBom, saveBom, deleteBom, listOperation } from '../../api/base'
 import { listMaterial } from '../../api/material'
 
 const query = reactive({ page: 1, size: 10, keyword: '' })
@@ -84,6 +91,7 @@ const loading = ref(false)
 const materials = ref([])
 const products = ref([])
 const children = ref([])
+const operations = ref([])
 const editor = reactive({ visible: false, bom: {}, items: [] })
 
 const materialLabel = id => {
@@ -104,10 +112,10 @@ async function openEditor(id) {
   if (id) {
     const d = await getBom(id)
     editor.bom = d.bom
-    editor.items = d.items.map(it => ({ childMaterialId: it.childMaterialId, quantity: it.quantity }))
+    editor.items = d.items.map(it => ({ childMaterialId: it.childMaterialId, quantity: it.quantity, operationCode: it.operationCode || '' }))
   } else {
     editor.bom = { version: 'V1.0', status: 1 }
-    editor.items = [{ childMaterialId: undefined, quantity: 1 }]
+    editor.items = [{ childMaterialId: undefined, quantity: 1, operationCode: '' }]
   }
   editor.visible = true
 }
@@ -129,6 +137,7 @@ onMounted(async () => {
   materials.value = await listMaterial()
   products.value = materials.value.filter(m => m.materialType === 'PRODUCT')
   children.value = materials.value.filter(m => m.materialType !== 'PRODUCT')
+  operations.value = await listOperation()
   load()
 })
 </script>
